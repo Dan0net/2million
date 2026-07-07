@@ -2,7 +2,7 @@
 // In TEST MODE it claims pixels for free via /api/claim; otherwise it creates
 // a Stripe Checkout session via /api/checkout and redirects to it.
 
-export function createCart({ selection, testMode, els, toast, onAfterClaim, render }) {
+export function createCart({ selection, testMode, els, toast, onAfterClaim, render, onClear }) {
   function mode() {
     return document.querySelector('input[name="mode"]:checked').value; // "rent" | "buy"
   }
@@ -84,6 +84,7 @@ export function createCart({ selection, testMode, els, toast, onAfterClaim, rend
     selection.clear();
     render();
     refresh();
+    onClear?.();
   });
   els.checkoutBtn.addEventListener("click", checkout);
   for (const r of document.querySelectorAll('input[name="mode"]')) {

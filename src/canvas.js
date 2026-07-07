@@ -8,6 +8,7 @@ export function createBoardView({ canvasEl, width, height, radius, selection, on
   const cy = height / 2;
 
   let board = null; // { canvas, isTaken(x,y) }
+  let pending = null; // { x, y } being coloured, or null
   let scale = 1;
   let offX = 0;
   let offY = 0;
@@ -88,6 +89,17 @@ export function createBoardView({ canvasEl, width, height, radius, selection, on
       ctx.restore();
     }
 
+    // Pending pixel marker (the one being coloured) — drawn on top, unclipped.
+    if (pending) {
+      const pad = 3 / scale;
+      ctx.lineWidth = 2 / scale;
+      ctx.strokeStyle = "#000";
+      ctx.strokeRect(pending.x - pad, pending.y - pad, 1 + pad * 2, 1 + pad * 2);
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 1 / scale;
+      ctx.strokeRect(pending.x - pad, pending.y - pad, 1 + pad * 2, 1 + pad * 2);
+    }
+
     // Disc border.
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -99,6 +111,23 @@ export function createBoardView({ canvasEl, width, height, radius, selection, on
   }
 
   function setBoard(b) { board = b; render(); }
+
+  function setPending(p) { pending = p; render(); }
+
+  // Pan so board pixel (x,y) sits comfortably above a bottom inset (px),
+  // e.g. so a freshly-tapped pixel isn't hidden behind the bottom sheet.
+  function ensurePixelVisible(x, y, bottomInset = 0) {
+    const r = canvasEl.getBoundingClientRect();
+    const sy = offY + (y + 0.5) * scale;
+    const limit = r.height - bottomInset - 24;
+    if (sy > limit) {
+      offY -= sy - limit;
+      render();
+    } else if (sy < 80) {
+      offY += 80 - sy;
+      render();
+    }
+  }
 
   function zoomAt(sx, sy, factor) {
     const next = clampScale(scale * factor);
@@ -182,6 +211,8 @@ export function createBoardView({ canvasEl, width, height, radius, selection, on
     render,
     resetView,
     setBoard,
+    setPending,
+    ensurePixelVisible,
     zoomBy: (f) => {
       const r = canvasEl.getBoundingClientRect();
       zoomAt(r.width / 2, r.height / 2, f);
