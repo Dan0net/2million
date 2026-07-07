@@ -6,7 +6,7 @@
 // giant JSON list to the client.
 
 import { PNG } from "pngjs";
-import { store, BOARD_KEY, VERSION_KEY, BOARD_VERSION, listOrders } from "./blobs.js";
+import { store, BOARD_KEY, REV_KEY, VERSION_KEY, BOARD_VERSION, listOrders } from "./blobs.js";
 import { WIDTH, HEIGHT, hexToRgb } from "./pixels.js";
 
 // A fresh, fully-transparent board.
@@ -35,6 +35,7 @@ export async function ensureVersion(s = store()) {
     for (const b of blobs) await s.delete(b.key).catch(() => {});
   }
   await s.set(BOARD_KEY, encode(blankPNG()));
+  await s.set(REV_KEY, String(Date.now()));
   await s.set(VERSION_KEY, BOARD_VERSION);
 }
 
@@ -48,6 +49,7 @@ export async function loadBoard(s = store()) {
 
 export async function saveBoard(png, s = store()) {
   await s.set(BOARD_KEY, encode(png));
+  await s.set(REV_KEY, String(Date.now())); // new revision → busts the board cache
 }
 
 // Rebuild board.png from scratch out of the order records (the source of

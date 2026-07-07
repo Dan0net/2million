@@ -5,9 +5,13 @@
 import { createBoardView } from "./canvas.js";
 import { createCart } from "./cart.js";
 
+// r/place-style palette: saturated, even hue coverage, real blues, greyscale ramp.
 const PRESETS = [
-  "#e63946", "#f77f00", "#fcbf49", "#ffd166", "#06d6a0", "#2a9d8f", "#118ab2", "#457b9d",
-  "#3a0ca3", "#7209b7", "#b5179e", "#f72585", "#ff006e", "#ffffff", "#adb5bd", "#000000",
+  "#6d001a", "#be0039", "#ff4500", "#ffa800", "#ffd635", "#fff8b8",
+  "#00a368", "#00cc78", "#7eed56", "#00756f", "#009eaa", "#00ccc0",
+  "#2450a4", "#3690ea", "#51e9f4", "#493ac1", "#6a5cff", "#94b3ff",
+  "#811e9f", "#b44ac0", "#e4abff", "#de107f", "#ff3881", "#ff99aa",
+  "#6d482f", "#9c6926", "#ffb470", "#000000", "#515252", "#898d90", "#d4d7d9", "#ffffff",
 ];
 
 const els = {
@@ -72,8 +76,10 @@ function buildSwatches() {
   }
 }
 
-async function loadBoard(width, height) {
-  const res = await fetch("/api/board", { cache: "no-store" });
+// `v` is a cache key: the config `rev` for the cacheable initial load, or
+// Date.now() to force a fresh copy after the user's own purchase.
+async function loadBoard(width, height, v) {
+  const res = await fetch(`/api/board?v=${encodeURIComponent(v)}`);
   const blob = await res.blob();
   const bmp = await createImageBitmap(blob);
   const off = document.createElement("canvas");
@@ -137,11 +143,11 @@ async function main() {
   buildSwatches();
   setColor(activeColor);
 
-  const cfg = await fetch("/api/config").then((r) => r.json());
+  const cfg = await fetch("/api/config", { cache: "no-store" }).then((r) => r.json());
   const { width, height, testMode } = cfg;
 
   const selection = new Map(); // key = y*width+x → { x, y, color }
-  let board = await loadBoard(width, height);
+  let board = await loadBoard(width, height, cfg.rev); // cacheable initial load
 
   const view = createBoardView({
     canvasEl: els.canvas,
@@ -183,7 +189,7 @@ async function main() {
     toast,
     render: () => view.render(),
     onAfterClaim: async () => {
-      board = await loadBoard(width, height);
+      board = await loadBoard(width, height, Date.now()); // force-fresh after own purchase
       view.setBoard(board);
       view.setHighlight(null);
       cart.refresh();
@@ -246,7 +252,7 @@ async function main() {
   if (params.get("status") === "success") {
     toast("Payment complete — your pixels are being placed! 🎉", "ok");
     setTimeout(async () => {
-      board = await loadBoard(width, height);
+      board = await loadBoard(width, height, Date.now()); // force-fresh after payment
       view.setBoard(board);
     }, 1500);
     history.replaceState({}, "", location.pathname);

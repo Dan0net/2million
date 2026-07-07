@@ -20,7 +20,14 @@ export default async () => {
     body = Buffer.from(buf);
   }
 
+  // The URL carries a ?v=<rev> cache key (see config.rev), so each revision is a
+  // distinct, immutable asset — cache it hard on the browser AND Netlify's edge.
+  const cache = "public, max-age=31536000, immutable";
   return new Response(body, {
-    headers: { "Content-Type": "image/png", "Cache-Control": "no-store" },
+    headers: {
+      "Content-Type": "image/png",
+      "Cache-Control": cache,
+      "Netlify-CDN-Cache-Control": cache,
+    },
   });
 };

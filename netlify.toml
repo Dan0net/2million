@@ -1,5 +1,8 @@
-# Netlify configuration for Rent-a-Pixel
+# Netlify configuration for the 2 Million Dollar Homepage.
 # Static site is served from the repo root; serverless functions live in netlify/functions.
+#
+# Cache-Control is set per-function: /api/board is served as a versioned,
+# immutable asset (see config.rev); the other endpoints send no-store themselves.
 
 [build]
   publish = "."
@@ -7,10 +10,3 @@
 
 [functions]
   node_bundler = "esbuild"
-
-# The board PNG must never be cached by the CDN as a static asset — it is
-# served by the `board` function and changes as pixels are claimed.
-[[headers]]
-  for = "/api/*"
-  [headers.values]
-    Cache-Control = "no-store"
