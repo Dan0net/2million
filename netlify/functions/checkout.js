@@ -44,6 +44,7 @@ export default async (req) => {
   try {
     session = await stripe().checkout.sessions.create({
       mode: "payment",
+      allow_promotion_codes: true, // customers can enter a Stripe promo code
       line_items: [
         {
           quantity: count,

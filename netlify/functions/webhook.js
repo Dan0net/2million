@@ -1,10 +1,12 @@
 // POST /api/webhook — Stripe events. This is the ONLY source of truth for
 // fulfilment; we never place pixels on the success redirect.
-//   checkout.session.completed → write the order + paint the board (idempotent)
+//   checkout.session.completed → place the free pixels, refund any that were
+//   already taken, record the order (with buyer email), rebuild the board.
 
 import { stripe } from "./_lib/stripe.js";
 import { store, orderKey, sessionKey } from "./_lib/blobs.js";
-import { loadBoard, paint, saveBoard } from "./_lib/board-png.js";
+import { loadBoard, isTaken, rebuildBoard } from "./_lib/board-png.js";
+import { refundAmountForConflicts } from "./_lib/pixels.js";
 
 export const config = { path: "/api/webhook" };
 
@@ -28,6 +30,8 @@ export default async (req) => {
     try {
       await fulfil(store(), event.data.object);
     } catch (err) {
+      // Return 500 so Stripe retries (refunds use an idempotency key, so a
+      // retry won't double-refund).
       return new Response(`Handler error: ${err.message}`, { status: 500 });
     }
   }
@@ -45,17 +49,35 @@ async function fulfil(s, session) {
   const stash = await s.get(sessionKey(orderId), { type: "json" });
   if (!stash) return;
 
+  // Split into pixels we can place vs. ones already owned by an earlier order.
   const png = await loadBoard(s);
-  paint(png, stash.pixels);
-  await saveBoard(png, s);
+  const place = [];
+  const conflicts = [];
+  for (const p of stash.pixels) (isTaken(png, p.x, p.y) ? conflicts : place).push(p);
 
+  // Refund the conflicting pixels proportionally to what was actually paid.
+  // Do this BEFORE recording the order so a failure retries; the idempotency
+  // key stops a retry from refunding twice.
+  const refund = refundAmountForConflicts(session.amount_total || 0, conflicts.length, stash.pixels.length);
+  if (refund > 0 && session.payment_intent) {
+    await stripe().refunds.create(
+      { payment_intent: session.payment_intent, amount: refund },
+      { idempotencyKey: `refund_${orderId}` }
+    );
+  }
+
+  // Always record an order (even if empty) so retries stay idempotent.
   await s.setJSON(orderKey(orderId), {
     id: orderId,
-    pixels: stash.pixels,
+    pixels: place,
     description: stash.description,
     url: stash.url,
+    email: session.customer_details?.email ?? null,
     createdAt: Date.now(),
     stripeSessionId: session.id,
+    ...(refund > 0 ? { refundedCents: refund } : {}),
   });
+
+  await rebuildBoard(s);
   await s.delete(sessionKey(orderId)).catch(() => {});
 }

@@ -6,7 +6,7 @@
 // giant JSON list to the client.
 
 import { PNG } from "pngjs";
-import { store, BOARD_KEY, VERSION_KEY, BOARD_VERSION } from "./blobs.js";
+import { store, BOARD_KEY, VERSION_KEY, BOARD_VERSION, listOrders } from "./blobs.js";
 import { WIDTH, HEIGHT, hexToRgb } from "./pixels.js";
 
 // A fresh, fully-transparent board.
@@ -44,6 +44,17 @@ export async function loadBoard(s = store()) {
 
 export async function saveBoard(png, s = store()) {
   await s.set(BOARD_KEY, encode(png));
+}
+
+// Rebuild board.png from scratch out of the order records (the source of
+// truth), so the image can never drift from what people actually bought.
+export async function rebuildBoard(s = store()) {
+  const png = blankPNG();
+  for (const o of await listOrders(s)) {
+    if (Array.isArray(o.pixels)) paint(png, o.pixels);
+  }
+  await saveBoard(png, s);
+  return png;
 }
 
 function idx(x, y) {

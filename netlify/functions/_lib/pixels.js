@@ -79,6 +79,14 @@ export function normalizeUrl(raw) {
   return { ok: true, url: u.href };
 }
 
+// Proportional refund (in cents) for the pixels that turned out to be already
+// owned at fulfilment — based on what was actually paid, so discounts/promos
+// are respected. Returns 0 for free ($0) orders.
+export function refundAmountForConflicts(amountTotalCents, conflictCount, totalCount) {
+  if (!amountTotalCents || !conflictCount || !totalCount) return 0;
+  return Math.round((amountTotalCents * conflictCount) / totalCount);
+}
+
 // Validate the description (required) + link (optional) attached to a purchase.
 // Returns { ok: true, description, url } or { ok: false, error }.
 export function validateMeta({ description, url } = {}) {

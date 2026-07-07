@@ -6,7 +6,7 @@
 import { TEST_MODE } from "./_lib/stripe.js";
 import { store, orderKey } from "./_lib/blobs.js";
 import { validateSelection, validateMeta, WIDTH } from "./_lib/pixels.js";
-import { loadBoard, isTaken, paint, saveBoard } from "./_lib/board-png.js";
+import { loadBoard, isTaken, rebuildBoard } from "./_lib/board-png.js";
 
 export const config = { path: "/api/claim" };
 
@@ -37,18 +37,17 @@ export default async (req) => {
     );
   }
 
-  paint(png, v.pixels);
-  await saveBoard(png, s);
-
   const id = crypto.randomUUID();
   await s.setJSON(orderKey(id), {
     id,
     pixels: v.pixels,
     description: m.description,
     url: m.url,
+    email: null,
     createdAt: Date.now(),
     test: true,
   });
+  await rebuildBoard(s); // board is derived from the order records
 
   return json({ ok: true, orderId: id, pixels: v.pixels });
 };
