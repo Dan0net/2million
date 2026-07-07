@@ -15,8 +15,8 @@ export function store() {
 
 export const BOARD_KEY = "board.png";
 export const VERSION_KEY = "board.version";
-// Bump to force a one-time reset of board.png (e.g. after a dimension change).
-export const BOARD_VERSION = "2";
+// Bump to force a one-time full reset (wipes all orders + blanks the board).
+export const BOARD_VERSION = "3";
 export const orderKey = (id) => `orders/${id}.json`;
 export const sessionKey = (id) => `sessions/${id}.json`;
 

@@ -23,15 +23,19 @@ export function decode(buffer) {
   return PNG.sync.read(buffer);
 }
 
-// One-time reset: if the stored board predates the current BOARD_VERSION,
-// overwrite it with a fresh blank board. Runs once (then it's a cheap no-op),
-// so we never keep any per-request dimension-guessing logic around.
+// One-time reset: when BOARD_VERSION changes, wipe everything — delete all
+// order + pending-session records and blank the board — then stamp the new
+// version. Runs once (then it's a cheap no-op). Bump BOARD_VERSION to reset.
 export async function ensureVersion(s = store()) {
   const ver = await s.get(VERSION_KEY, { type: "text" });
-  if (ver !== BOARD_VERSION) {
-    await s.set(BOARD_KEY, encode(blankPNG()));
-    await s.set(VERSION_KEY, BOARD_VERSION);
+  if (ver === BOARD_VERSION) return;
+
+  for (const prefix of ["orders/", "sessions/"]) {
+    const { blobs } = await s.list({ prefix });
+    for (const b of blobs) await s.delete(b.key).catch(() => {});
   }
+  await s.set(BOARD_KEY, encode(blankPNG()));
+  await s.set(VERSION_KEY, BOARD_VERSION);
 }
 
 // Load the current board, creating a blank one on first use.
