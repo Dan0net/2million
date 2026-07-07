@@ -66,12 +66,13 @@ html, body {
 }
 .swatches button.active { border-color: #fff; transform: scale(1.05); }
 
-/* First swatch = custom colour: the gradient favicon; opens the picker modal. */
+/* First swatch = custom colour: just the gradient favicon, rounded, no border. */
 .swatches button.custom {
   background: url(/favicon.png) center/cover;
-  image-rendering: auto;
+  border: none;
+  border-radius: 6px;
 }
-.swatches button.custom.active { border-color: #fff; transform: scale(1.05); }
+.swatches button.custom.active { transform: none; }
 
 /* ── Colour-picker modal ──────────────────── */
 .picker-card { width: min(340px, 100%); }
@@ -93,18 +94,19 @@ html, body {
   border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.5); background: transparent;
   transform: translate(-50%, -50%); pointer-events: none;
 }
-.picker-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.picker-row { display: flex; gap: 8px; align-items: center; }
 .picker-preview {
-  flex: 0 0 auto; width: 40px; height: 40px; border-radius: 9px;
+  flex: 0 0 auto; width: 44px; height: 44px; border-radius: 9px;
   border: 1px solid var(--border);
 }
 .picker-row .hex {
   flex: 1 1 0; min-width: 0;
-  padding: 11px 12px; font-size: 15px; font-family: ui-monospace, monospace;
+  padding: 12px; font-size: 15px; font-family: ui-monospace, monospace;
   background: #0e1116; color: var(--text);
   border: 1px solid var(--border); border-radius: 9px;
 }
 .picker-row .hex:focus { outline: none; border-color: var(--accent); }
+.picker-row .primary { flex: 0 0 auto; padding: 12px 18px; }
 
 .bar-title {
   margin: 0 0 1px;

@@ -35,24 +35,25 @@ const hsvToHex = (h, s, v) => {
   return "#" + [r, g, b].map((n) => Math.round((n + m) * 255).toString(16).padStart(2, "0")).join("");
 };
 
-// r/place-style palette (raw); rendered order is computed below.
+// Tailwind 500 palette (raw); rendered order is computed below.
 const RAW_PRESETS = [
-  "#be0039", "#ff4500", "#ffa800", "#ffd635", "#fff8b8",
-  "#00cc78", "#7eed56", "#00a368", "#00756f", "#009eaa", "#00ccc0",
-  "#2450a4", "#3690ea", "#51e9f4", "#493ac1", "#6a5cff", "#94b3ff",
-  "#811e9f", "#b44ac0", "#e4abff", "#de107f", "#ff3881", "#ff99aa",
-  "#6d482f", "#9c6926", "#ffb470",
-  "#6d001a", "#000000", "#515252", "#898d90", "#d4d7d9", "#ffffff",
+  "#ef4444", "#f97316", "#f59e0b", "#eab308", "#84cc16", "#22c55e", "#10b981",
+  "#14b8a6", "#06b6d4", "#0ea5e9", "#3b82f6", "#6366f1", "#8b5cf6", "#a855f7",
+  "#d946ef", "#ec4899", "#f43f5e",
+  "#64748b", "#6b7280", "#71717a", "#737373", "#78716c",
 ];
 
 // Sort chromatic swatches by hue, rotated to start at the vibrant red; append
 // the neutrals (near-zero saturation) as a dark→light ramp at the end.
-const DEFAULT_COLOR = "#be0039";
+const DEFAULT_COLOR = "#ef4444";
 const PRESETS = (() => {
+  // Tailwind's grey families (slate…stone) have low saturation; treat them as
+  // neutrals so they cluster into a ramp at the end rather than scattering.
+  const NEUTRAL_S = 0.3;
   const items = RAW_PRESETS.map((c) => ({ c, hsv: hexToHsv(c) }));
-  const chroma = items.filter((x) => x.hsv.s >= 0.08)
+  const chroma = items.filter((x) => x.hsv.s >= NEUTRAL_S)
     .sort((a, b) => a.hsv.h - b.hsv.h || b.hsv.v - a.hsv.v);
-  const neutral = items.filter((x) => x.hsv.s < 0.08).sort((a, b) => a.hsv.v - b.hsv.v);
+  const neutral = items.filter((x) => x.hsv.s < NEUTRAL_S).sort((a, b) => a.hsv.v - b.hsv.v);
   const i = chroma.findIndex((x) => x.c === DEFAULT_COLOR);
   const rotated = i > 0 ? chroma.slice(i).concat(chroma.slice(0, i)) : chroma;
   return rotated.concat(neutral).map((x) => x.c);
@@ -74,7 +75,6 @@ const els = {
   hueHandle: document.getElementById("hueHandle"),
   pickerPreview: document.getElementById("pickerPreview"),
   hexInput: document.getElementById("hexInput"),
-  pickerCancel: document.getElementById("pickerCancel"),
   pickerUse: document.getElementById("pickerUse"),
   tooltip: document.getElementById("tooltip"),
   ttSpinner: document.getElementById("ttSpinner"),
@@ -212,7 +212,6 @@ function createPicker() {
     window.visualViewport?.removeEventListener("resize", fit);
   }
   els.customSwatch.addEventListener("click", open);
-  els.pickerCancel.addEventListener("click", close);
   els.pickerModal.addEventListener("click", (e) => { if (e.target === els.pickerModal) close(); });
   els.pickerUse.addEventListener("click", () => { setColor(hsvToHex(pk.h, pk.s, pk.v)); close(); });
 }
