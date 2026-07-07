@@ -8,7 +8,7 @@ export function createCart({ selection, testMode, els, toast, onAfterClaim, rend
 
   function refresh() {
     const n = selection.size;
-    els.bar.hidden = n === 0; // bar shows only once a pixel is selected
+    // Bar is always visible; buttons are greyed out when nothing is selected.
     els.clearBtn.disabled = n === 0 || busy;
     els.buyBtn.disabled = n === 0 || busy;
     els.buyBtn.textContent = n ? `Buy · ${fmt(n)}` : "Buy";

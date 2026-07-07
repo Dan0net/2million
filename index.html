@@ -15,12 +15,16 @@
 
       <!-- Owned-pixel tooltip -->
       <div id="tooltip" class="tooltip" hidden>
-        <p id="ttDesc" class="tt-desc"></p>
-        <a id="ttLink" class="tt-link" target="_blank" rel="noopener noreferrer"></a>
+        <div id="ttSpinner" class="spinner" aria-hidden="true"></div>
+        <div id="ttContent" hidden>
+          <p id="ttDesc" class="tt-desc"></p>
+          <a id="ttLink" class="tt-link" target="_blank" rel="noopener noreferrer"></a>
+        </div>
       </div>
 
-      <!-- Control bar: shown only once a pixel is selected -->
-      <section id="bar" class="bar" aria-label="Colours and checkout" hidden>
+      <!-- Control bar (always visible; buttons greyed until a pixel is selected) -->
+      <section id="bar" class="bar" aria-label="Colours and checkout">
+        <p class="bar-hint">Tap a pixel to buy it forever — $1 per pixel</p>
         <div class="swatches" id="swatches"></div>
         <div class="actions">
           <button id="clearBtn" class="ghost">Clear</button>
@@ -36,7 +40,7 @@
         <p class="modal-sub" id="modalSub">Add a description and a link for your pixels.</p>
         <label class="field">
           <span>Description</span>
-          <input id="descInput" type="text" maxlength="140" placeholder="e.g. My cat's blog" />
+          <input id="descInput" type="text" maxlength="140" placeholder="e.g. My website, project, or shop" />
         </label>
         <label class="field">
           <span>Link (optional)</span>

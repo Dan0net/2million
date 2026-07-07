@@ -66,6 +66,13 @@ html, body {
 }
 .swatches button.active { border-color: #fff; transform: scale(1.05); }
 
+.bar-hint {
+  margin: 0 0 2px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
 /* Row 2 — Clear + Buy */
 .actions { display: flex; gap: 8px; }
 button.primary, button.ghost {
@@ -91,16 +98,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Buy modal ────────────────────────────── */
 .modal {
-  position: fixed; inset: 0; z-index: 60;
-  height: 100dvh;
+  position: fixed; left: 0; right: 0; top: 0; z-index: 60;
+  height: 100dvh; /* JS narrows this to visualViewport when the keyboard opens */
   background: rgba(0, 0, 0, 0.55);
-  display: flex; align-items: flex-start; justify-content: center;
-  padding: 6vh 16px 16px;
-  overflow-y: auto; /* card stays reachable above the mobile keyboard */
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
 }
 .modal-card {
   width: min(400px, 100%);
-  margin: auto 0; /* centred when there's room, top-aligned when the keyboard shrinks the view */
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -121,20 +127,27 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .modal-actions { display: flex; gap: 8px; }
 .modal-actions .primary { flex: 1 1 0; }
 
-/* ── Owned-pixel tooltip ──────────────────── */
+/* ── Owned-pixel tooltip (anchored bottom-right of the pixel by JS) ── */
 .tooltip {
   position: fixed; z-index: 40;
-  max-width: 260px;
+  min-width: 44px; max-width: 260px;
   background: #0e1116;
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px 12px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-  transform: translate(-50%, calc(-100% - 12px)); /* above the tap by default */
 }
-.tooltip.below { transform: translate(-50%, 12px); } /* flipped below when clipped at top */
 .tt-desc { margin: 0 0 6px; font-size: 13px; word-break: break-word; }
 .tt-link { font-size: 12px; color: #7cc4ff; word-break: break-all; }
+
+.spinner {
+  width: 20px; height: 20px; margin: 2px auto;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Toast ────────────────────────────────── */
 .toast {

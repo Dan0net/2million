@@ -12,19 +12,17 @@ export function createBoardView({
   const VISIBLE_SCALE = 18; // scale at which individual pixels read clearly
 
   let board = null; // { canvas, isTaken(x,y) }
+  let highlight = null; // the single currently-tapped pixel { x, y }, outlined
   let scale = 1;
   let offX = 0;
   let offY = 0;
 
-  const MIN_SCALE = () => fitScale() * 0.9;
+  // Never zoom out past the initial fill-width scale, so the board always
+  // fills the viewport width.
+  const MIN_SCALE = () => canvasEl.getBoundingClientRect().width / width;
   const MAX_SCALE = 48;
 
   function availHeight(r) { return r.height - getTopInset() - getBottomInset(); }
-
-  function fitScale() {
-    const r = canvasEl.getBoundingClientRect();
-    return Math.min(r.width / width, availHeight(r) / height);
-  }
 
   function resize() {
     const r = canvasEl.getBoundingClientRect();
@@ -91,10 +89,21 @@ export function createBoardView({
     ctx.strokeStyle = "rgba(255,255,255,0.25)";
     ctx.strokeRect(0, 0, width, height);
 
+    // Outline just the currently-tapped pixel (selection or tooltip target).
+    if (highlight) {
+      ctx.lineWidth = 3 / scale;
+      ctx.strokeStyle = "#000";
+      ctx.strokeRect(highlight.x, highlight.y, 1, 1);
+      ctx.lineWidth = 1.5 / scale;
+      ctx.strokeStyle = "#fff";
+      ctx.strokeRect(highlight.x, highlight.y, 1, 1);
+    }
+
     ctx.restore();
   }
 
   function setBoard(b) { board = b; render(); }
+  function setHighlight(p) { highlight = p; render(); }
 
   // Pan so board pixel (x,y) sits comfortably above the bottom bar.
   function ensurePixelVisible(x, y, bottomInset = 0) {
@@ -224,7 +233,13 @@ export function createBoardView({
     zoomAt(p.x, p.y, e.deltaY < 0 ? 1.15 : 1 / 1.15);
   }, { passive: false });
 
-  window.addEventListener("resize", resetView);
+  // On resize (incl. the mobile keyboard opening) keep the current zoom/pan —
+  // only re-sync the backing store. Never re-fit, which would reset the zoom.
+  window.addEventListener("resize", () => {
+    resize();
+    scale = Math.max(scale, MIN_SCALE());
+    render();
+  });
 
-  return { render, resetView, setBoard, zoomToPixel };
+  return { render, resetView, setBoard, setHighlight, zoomToPixel };
 }

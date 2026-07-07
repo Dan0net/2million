@@ -18,6 +18,8 @@ const els = {
   buyBtn: document.getElementById("buyBtn"),
   toast: document.getElementById("toast"),
   tooltip: document.getElementById("tooltip"),
+  ttSpinner: document.getElementById("ttSpinner"),
+  ttContent: document.getElementById("ttContent"),
   ttDesc: document.getElementById("ttDesc"),
   ttLink: document.getElementById("ttLink"),
   modal: document.getElementById("buyModal"),
@@ -85,33 +87,50 @@ async function loadBoard(width, height) {
 
 function hideTooltip() { els.tooltip.hidden = true; }
 
-async function showTooltip(x, y, sx, sy) {
-  let data = null;
-  try {
-    const res = await fetch(`/api/pixel?x=${x}&y=${y}`, { cache: "no-store" });
-    if (res.ok) data = await res.json();
-  } catch { /* ignore */ }
-  if (!data) return;
-  els.ttDesc.textContent = data.description || "";
-  if (data.url && /^https?:\/\//i.test(data.url)) {
-    els.ttLink.href = data.url;
-    els.ttLink.textContent = data.url.replace(/^https?:\/\//, "");
-    els.ttLink.hidden = false;
-  } else {
-    els.ttLink.hidden = true;
-  }
-
-  // Show, then keep it fully on-screen: flip below the tap when there's no
-  // room above (board is flush to the top), and clamp horizontally.
-  els.tooltip.classList.remove("below");
-  els.tooltip.style.left = sx + "px";
-  els.tooltip.style.top = sy + "px";
-  els.tooltip.hidden = false;
+// Place the tooltip to the bottom-right of the tap, flipping to the left/top
+// when it would overflow so it always stays fully on-screen.
+function positionTooltip(sx, sy) {
+  const gap = 12;
   const tw = els.tooltip.offsetWidth;
   const th = els.tooltip.offsetHeight;
-  if (sy - th - 12 < 8) els.tooltip.classList.add("below");
-  const vw = window.innerWidth;
-  els.tooltip.style.left = Math.min(Math.max(sx, 8 + tw / 2), vw - 8 - tw / 2) + "px";
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let left = sx + gap;
+  let top = sy + gap;
+  if (left + tw > vw - 8) left = sx - gap - tw; // flip left
+  if (left < 8) left = 8;
+  if (top + th > vh - 8) top = sy - gap - th; // flip above
+  if (top < 8) top = 8;
+  els.tooltip.style.left = left + "px";
+  els.tooltip.style.top = top + "px";
+}
+
+let ttToken = 0;
+function showTooltip(x, y, sx, sy) {
+  const token = ++ttToken;
+  // Show immediately with a spinner, then fill in once the data arrives.
+  els.ttContent.hidden = true;
+  els.ttSpinner.hidden = false;
+  els.tooltip.hidden = false;
+  positionTooltip(sx, sy);
+
+  fetch(`/api/pixel?x=${x}&y=${y}`, { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null)
+    .then((data) => {
+      if (token !== ttToken) return; // superseded by a newer tap
+      els.ttDesc.textContent = (data && data.description) || "Owned pixel";
+      const url = data && data.url;
+      if (url && /^https?:\/\//i.test(url)) {
+        els.ttLink.href = url;
+        els.ttLink.textContent = url.replace(/^https?:\/\//, "");
+        els.ttLink.hidden = false;
+      } else {
+        els.ttLink.hidden = true;
+      }
+      els.ttSpinner.hidden = true;
+      els.ttContent.hidden = false;
+      positionTooltip(sx, sy); // content changed size → re-place
+    });
 }
 
 async function main() {
@@ -129,22 +148,29 @@ async function main() {
     width,
     height,
     selection,
-    getBottomInset: () => (els.bar.hidden ? 0 : els.bar.offsetHeight),
+    getBottomInset: () => els.bar.offsetHeight,
     onPixelClick: (x, y, sx, sy) => {
       hideTooltip();
       if (board.isTaken(x, y)) {
+        view.setHighlight({ x, y }); // outline the pixel being inspected
         showTooltip(x, y, sx, sy); // owned → show its description + link
         return;
       }
       const k = y * width + x;
-      if (selection.has(k)) {
-        selection.delete(k); // toggle off
-        view.render();
+      const cur = selection.get(k);
+      if (cur) {
+        if (cur.color === activeColor) {
+          selection.delete(k); // same colour → remove
+          view.setHighlight(null);
+        } else {
+          cur.color = activeColor; // different colour → recolour, keep selected
+          view.setHighlight({ x, y });
+        }
         cart.refresh();
         return;
       }
       selection.set(k, { x, y, color: activeColor });
-      view.render();
+      view.setHighlight({ x, y });
       cart.refresh();
       view.zoomToPixel(x, y);
     },
@@ -159,9 +185,11 @@ async function main() {
     onAfterClaim: async () => {
       board = await loadBoard(width, height);
       view.setBoard(board);
+      view.setHighlight(null);
       cart.refresh();
     },
   });
+  els.clearBtn.addEventListener("click", () => view.setHighlight(null));
 
   view.setBoard(board);
   view.resetView();
@@ -171,14 +199,30 @@ async function main() {
   // Dismiss the tooltip as soon as the user starts a new gesture.
   els.canvas.addEventListener("pointerdown", hideTooltip);
 
+  // Keep the modal centred in the visible area (above the mobile keyboard).
+  function positionModal() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    els.modal.style.top = vv.offsetTop + "px";
+    els.modal.style.height = vv.height + "px";
+  }
   function openModal() {
     hideTooltip();
     els.modalErr.textContent = "";
     els.modalContinue.textContent = `Buy $${selection.size}`;
     els.modal.hidden = false;
+    positionModal();
+    window.visualViewport?.addEventListener("resize", positionModal);
+    window.visualViewport?.addEventListener("scroll", positionModal);
     els.descInput.focus();
   }
-  function closeModal() { els.modal.hidden = true; }
+  function closeModal() {
+    els.modal.hidden = true;
+    els.modal.style.top = "";
+    els.modal.style.height = "";
+    window.visualViewport?.removeEventListener("resize", positionModal);
+    window.visualViewport?.removeEventListener("scroll", positionModal);
+  }
 
   els.buyBtn.addEventListener("click", () => {
     if (!selection.size) return;
