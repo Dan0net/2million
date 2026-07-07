@@ -1,6 +1,6 @@
-// Checkout controls: Clear / Buy / Rent buttons. Each of Buy/Rent triggers a
-// checkout in its mode — claim for free in TEST MODE, otherwise a Stripe
-// Checkout session (redirect to its URL).
+// Checkout controls: Clear + Buy. Buy always costs $1/pixel. The description +
+// URL are collected by the modal (in main.js) and passed to checkout(meta).
+// Test mode claims for free via /api/claim; otherwise a Stripe session.
 
 export function createCart({ selection, testMode, els, toast, onAfterClaim, render }) {
   const fmt = (n) => "$" + n.toLocaleString("en-US");
@@ -8,17 +8,15 @@ export function createCart({ selection, testMode, els, toast, onAfterClaim, rend
 
   function refresh() {
     const n = selection.size;
-    const disabled = n === 0 || busy;
-    els.clearBtn.disabled = disabled;
-    els.rentBtn.disabled = disabled;
-    els.buyBtn.disabled = disabled;
-    els.rentBtn.textContent = n ? `Rent · ${fmt(n)}/mo` : "Rent";
-    els.buyBtn.textContent = n ? `Buy · ${fmt(n * 1000)}` : "Buy";
+    els.bar.hidden = n === 0; // bar shows only once a pixel is selected
+    els.clearBtn.disabled = n === 0 || busy;
+    els.buyBtn.disabled = n === 0 || busy;
+    els.buyBtn.textContent = n ? `Buy · ${fmt(n)}` : "Buy";
   }
 
-  async function checkout(mode) {
+  async function checkout({ description, url }) {
     const pixels = [...selection.values()];
-    if (!pixels.length || busy) return;
+    if (!pixels.length || busy) return { ok: false };
     busy = true;
     refresh();
     try {
@@ -26,7 +24,7 @@ export function createCart({ selection, testMode, els, toast, onAfterClaim, rend
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pixels, mode }),
+        body: JSON.stringify({ pixels, description, url }),
       });
       const data = await res.json().catch(() => ({}));
 
@@ -38,20 +36,20 @@ export function createCart({ selection, testMode, els, toast, onAfterClaim, rend
         } else {
           toast(data.error || "Something went wrong. Try again.", "err");
         }
-        return;
+        return { ok: false };
       }
 
       if (testMode) {
         selection.clear();
-        toast(`Claimed ${pixels.length} pixel${pixels.length === 1 ? "" : "s"}! 🎉`, "ok");
+        toast(`Bought ${pixels.length} pixel${pixels.length === 1 ? "" : "s"}! 🎉`, "ok");
         await onAfterClaim();
       } else if (data.url) {
         window.location = data.url; // → Stripe Checkout
-      } else {
-        toast("Could not start checkout.", "err");
       }
+      return { ok: true };
     } catch (err) {
       toast("Network error. Try again.", "err");
+      return { ok: false };
     } finally {
       busy = false;
       refresh();
@@ -63,8 +61,6 @@ export function createCart({ selection, testMode, els, toast, onAfterClaim, rend
     render();
     refresh();
   });
-  els.rentBtn.addEventListener("click", () => checkout("rent"));
-  els.buyBtn.addEventListener("click", () => checkout("buy"));
 
-  return { refresh };
+  return { refresh, checkout };
 }

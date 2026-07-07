@@ -4,8 +4,7 @@ import Stripe from "stripe";
 
 export const TEST_MODE = process.env.TEST_MODE !== "false"; // default ON
 
-export const PRICE_LIFETIME_CENTS = 100000; // $1000.00 per pixel, one-time
-export const PRICE_RENT_DOLLARS = 1; // $1 / month per pixel (via STRIPE_RENT_PRICE_ID)
+export const PRICE_CENTS = 100; // $1.00 per pixel, one-time
 
 let _stripe;
 export function stripe() {
@@ -19,9 +18,5 @@ export function stripe() {
 
 // Base URL of the deployed site (Netlify provides URL / DEPLOY_PRIME_URL).
 export function siteUrl() {
-  return (
-    process.env.URL ||
-    process.env.DEPLOY_PRIME_URL ||
-    "http://localhost:8888"
-  );
+  return process.env.URL || process.env.DEPLOY_PRIME_URL || "http://localhost:8888";
 }

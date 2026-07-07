@@ -3,41 +3,52 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>Rent-a-Pixel — rent a pixel for $1/mo or own it for life</title>
-    <meta name="description" content="A giant circular canvas of pixels. Rent one for $1/month, or buy it forever for $1000. Tap a pixel, pick a colour, claim your spot." />
-    <meta name="theme-color" content="#0e1116" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23e63946'/%3E%3Crect x='44' y='44' width='12' height='12' fill='%23fff'/%3E%3C/svg%3E" />
+    <title>2 Million Dollar Homepage</title>
+    <meta name="description" content="Two million pixels. $1 each, yours forever. Paint a pixel, add your link, own a piece of the homepage." />
+    <meta name="theme-color" content="#6b7280" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23111'/%3E%3Crect x='40' y='40' width='20' height='20' fill='%23e63946'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
-    <header id="topbar" class="topbar">
-      <h1>Rent-a-Pixel</h1>
-    </header>
-
     <main class="stage">
       <canvas id="board" aria-label="Pixel canvas"></canvas>
 
-      <!-- Floating zoom controls -->
-      <div id="zoomctl" class="zoomctl" aria-label="Zoom">
-        <button id="zoomIn" title="Zoom in">＋</button>
-        <button id="zoomOut" title="Zoom out">－</button>
-        <button id="zoomReset" title="Fit board">⤢</button>
+      <!-- Owned-pixel tooltip -->
+      <div id="tooltip" class="tooltip" hidden>
+        <p id="ttDesc" class="tt-desc"></p>
+        <a id="ttLink" class="tt-link" target="_blank" rel="noopener noreferrer"></a>
       </div>
 
-      <!-- Always-visible control bar -->
-      <section id="bar" class="bar" aria-label="Colours and checkout">
-        <div class="swatches" id="swatches">
-          <label class="custom" title="Custom colour">
-            <input type="color" id="colorInput" value="#e63946" />
-          </label>
-        </div>
+      <!-- Control bar: shown only once a pixel is selected -->
+      <section id="bar" class="bar" aria-label="Colours and checkout" hidden>
+        <div class="swatches" id="swatches"></div>
         <div class="actions">
-          <button id="clearBtn" class="ghost" disabled>Clear</button>
-          <button id="buyBtn" class="primary buy" disabled>Buy</button>
-          <button id="rentBtn" class="primary rent" disabled>Rent</button>
+          <button id="clearBtn" class="ghost">Clear</button>
+          <button id="buyBtn" class="primary">Buy</button>
         </div>
       </section>
     </main>
+
+    <!-- Buy modal: description + URL before checkout -->
+    <div id="buyModal" class="modal" hidden>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <h2 id="modalTitle">Almost yours</h2>
+        <p class="modal-sub" id="modalSub">Add a description and a link for your pixels.</p>
+        <label class="field">
+          <span>Description</span>
+          <input id="descInput" type="text" maxlength="140" placeholder="e.g. My cat's blog" />
+        </label>
+        <label class="field">
+          <span>Link URL</span>
+          <input id="urlInput" type="url" inputmode="url" placeholder="https://example.com" />
+        </label>
+        <p id="modalErr" class="modal-err"></p>
+        <div class="modal-actions">
+          <button id="modalCancel" class="ghost">Cancel</button>
+          <button id="modalContinue" class="primary">Continue</button>
+        </div>
+      </div>
+    </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 

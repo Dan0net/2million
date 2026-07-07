@@ -1,7 +1,7 @@
 {
-  "name": "rent-a-pixel",
+  "name": "two-million-dollar-homepage",
   "version": "1.0.0",
-  "description": "Rent-a-Pixel — rent a pixel for $1/month or buy it for life for $1000. A circular pixel canvas.",
+  "description": "The 2 Million Dollar Homepage — 2,000,000 pixels, $1 each, yours forever.",
   "private": true,
   "type": "module",
   "scripts": {

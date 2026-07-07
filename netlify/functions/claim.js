@@ -1,15 +1,14 @@
 // POST /api/claim — TEST MODE ONLY.
-// Lets anyone set pixels for free (no Stripe). Validates the selection,
-// rejects already-taken pixels, then writes an order + paints the board.
+// Lets anyone buy pixels for free (no Stripe). Validates the selection + the
+// description/URL, rejects already-taken pixels, then writes an order and
+// paints the board.
 
 import { TEST_MODE } from "./_lib/stripe.js";
 import { store, orderKey } from "./_lib/blobs.js";
-import { validateSelection, WIDTH } from "./_lib/pixels.js";
+import { validateSelection, validateMeta, WIDTH } from "./_lib/pixels.js";
 import { loadBoard, isTaken, paint, saveBoard } from "./_lib/board-png.js";
 
 export const config = { path: "/api/claim" };
-
-const RENT_TEST_DAYS = 30;
 
 export default async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -24,12 +23,12 @@ export default async (req) => {
 
   const v = validateSelection(body?.pixels);
   if (!v.ok) return json({ error: v.error }, 400);
-  const mode = body?.mode === "buy" ? "buy" : "rent";
+  const m = validateMeta(body);
+  if (!m.ok) return json({ error: m.error }, 400);
 
   const s = store();
   const png = await loadBoard(s);
 
-  // Reject anything already owned.
   const conflicts = v.pixels.filter((p) => isTaken(png, p.x, p.y));
   if (conflicts.length) {
     return json(
@@ -42,17 +41,14 @@ export default async (req) => {
   await saveBoard(png, s);
 
   const id = crypto.randomUUID();
-  const order = {
+  await s.setJSON(orderKey(id), {
     id,
-    type: mode === "buy" ? "lifetime" : "rent",
     pixels: v.pixels,
+    description: m.description,
+    url: m.url,
     createdAt: Date.now(),
     test: true,
-    ...(mode === "rent"
-      ? { expiresAt: Date.now() + RENT_TEST_DAYS * 24 * 60 * 60 * 1000 }
-      : {}),
-  };
-  await s.setJSON(orderKey(id), order);
+  });
 
   return json({ ok: true, orderId: id, pixels: v.pixels });
 };

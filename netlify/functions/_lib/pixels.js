@@ -1,25 +1,16 @@
-// Geometry + validation for the circular pixel board.
+// Geometry + validation for the rectangular pixel board.
 // Shared by every function so the rules live in exactly one place.
 
-export const WIDTH = 1600;
-export const HEIGHT = 1600;
-export const CX = WIDTH / 2; // 800
-export const CY = HEIGHT / 2; // 800
-export const RADIUS = WIDTH / 2; // 800  → circle fills the 1600×1600 box
+export const WIDTH = 1000;
+export const HEIGHT = 2000; // 1000 × 2000 = 2,000,000 pixels ($1 each)
 export const MAX_PIXELS_PER_ORDER = 5000; // guard against giant payloads
+export const MAX_DESC = 140;
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 // Canonical index for a pixel — also its identity for de-duplication.
 export function key(x, y) {
   return y * WIDTH + x;
-}
-
-// A pixel is only valid if its centre lies within the circle.
-export function inCircle(x, y) {
-  const dx = x + 0.5 - CX;
-  const dy = y + 0.5 - CY;
-  return dx * dx + dy * dy <= RADIUS * RADIUS;
 }
 
 export function isValidColor(c) {
@@ -55,8 +46,8 @@ export function validateSelection(input) {
     if (!Number.isInteger(x) || !Number.isInteger(y)) {
       return { ok: false, error: "Pixel coordinates must be integers." };
     }
-    if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT || !inCircle(x, y)) {
-      return { ok: false, error: `Pixel (${x}, ${y}) is outside the circle.` };
+    if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) {
+      return { ok: false, error: `Pixel (${x}, ${y}) is off the board.` };
     }
     if (!isValidColor(p.color)) {
       return { ok: false, error: `Pixel (${x}, ${y}) has an invalid colour.` };
@@ -67,4 +58,24 @@ export function validateSelection(input) {
     pixels.push({ x, y, color: p.color.toLowerCase() });
   }
   return { ok: true, pixels };
+}
+
+// Validate the description + link attached to a purchase.
+// Returns { ok: true, description, url } or { ok: false, error }.
+export function validateMeta({ description, url } = {}) {
+  const desc = typeof description === "string" ? description.trim().replace(/\s+/g, " ") : "";
+  if (!desc) return { ok: false, error: "A description is required." };
+  if (desc.length > MAX_DESC) return { ok: false, error: `Description too long (max ${MAX_DESC}).` };
+
+  const raw = typeof url === "string" ? url.trim() : "";
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return { ok: false, error: "Enter a valid URL (starting with http:// or https://)." };
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return { ok: false, error: "URL must start with http:// or https://." };
+  }
+  return { ok: true, description: desc.slice(0, MAX_DESC), url: parsed.href };
 }
