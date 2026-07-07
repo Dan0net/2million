@@ -27,13 +27,6 @@
         <p class="bar-title">The 2 Million Dollar Pixel Homepage</p>
         <p class="bar-hint">2 million pixels — $1 per pixel — Own your slice of internet history!</p>
 
-        <!-- Custom colour picker (hex field + colour wheel), toggled from the first swatch -->
-        <div id="customPop" class="custom-pop" hidden>
-          <input type="color" id="colorInput" value="#be0039" aria-label="Pick any colour" />
-          <input type="text" id="hexInput" class="hex" maxlength="7" placeholder="#rrggbb"
-                 spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="Hex colour code" />
-        </div>
-
         <div class="swatches" id="swatches">
           <button id="customSwatch" class="custom" title="Custom colour" aria-label="Custom colour"></button>
         </div>
@@ -43,6 +36,27 @@
         </div>
       </section>
     </main>
+
+    <!-- Colour picker modal -->
+    <div id="pickerModal" class="modal" hidden>
+      <div class="modal-card picker-card" role="dialog" aria-modal="true" aria-label="Pick a colour">
+        <h2>Pick a colour</h2>
+        <div class="sv-wrap">
+          <canvas id="svBox" class="sv-box" width="240" height="150"></canvas>
+          <div id="svHandle" class="sv-handle"></div>
+        </div>
+        <div id="hueSlider" class="hue-slider"><div id="hueHandle" class="hue-handle"></div></div>
+        <div class="picker-row">
+          <span id="pickerPreview" class="picker-preview"></span>
+          <input id="hexInput" class="hex" maxlength="7" placeholder="#rrggbb"
+                 spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="Hex colour code" />
+        </div>
+        <div class="modal-actions">
+          <button id="pickerCancel" class="ghost">Cancel</button>
+          <button id="pickerUse" class="primary">Use colour</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Buy modal: description + URL before checkout -->
     <div id="buyModal" class="modal" hidden>
