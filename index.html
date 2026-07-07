@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Rent-a-Pixel — rent a pixel for $1/mo or own it for life</title>
+    <meta name="description" content="A giant circular canvas of pixels. Rent one for $1/month, or buy it forever for $1000. Pick a colour, claim your spot." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23e63946'/%3E%3Crect x='44' y='44' width='12' height='12' fill='%23fff'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div id="banner" class="banner" hidden>
+      🧪 TEST MODE — pixels are <strong>free</strong>. No payment required.
+    </div>
+
+    <header id="topbar" class="topbar">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <h1>Rent-a-Pixel</h1>
+      </div>
+      <p class="tagline">Own a piece of the circle. <b>$1/mo</b> to rent · <b>$1000</b> to own forever.</p>
+    </header>
+
+    <main class="stage">
+      <canvas id="board" aria-label="Pixel canvas"></canvas>
+
+      <div id="hint" class="hint">Scroll to zoom · drag to pan · click a pixel to paint it</div>
+
+      <!-- Left: painting tools -->
+      <section class="panel tools" aria-label="Tools">
+        <label class="field">
+          <span>Colour</span>
+          <input type="color" id="colorInput" value="#e63946" />
+        </label>
+        <div class="swatches" id="swatches"></div>
+        <div class="zoombtns">
+          <button id="zoomIn" title="Zoom in">＋</button>
+          <button id="zoomOut" title="Zoom out">－</button>
+          <button id="zoomReset" title="Fit board">⤢</button>
+        </div>
+      </section>
+
+      <!-- Right: cart / checkout -->
+      <section class="panel cart" aria-label="Your selection">
+        <h2>Your pixels</h2>
+
+        <div class="modes" role="radiogroup" aria-label="Rent or buy">
+          <label class="mode">
+            <input type="radio" name="mode" value="rent" checked />
+            <span><b>Rent</b><small>$1 / month each</small></span>
+          </label>
+          <label class="mode">
+            <input type="radio" name="mode" value="buy" />
+            <span><b>Buy for life</b><small>$1000 each</small></span>
+          </label>
+        </div>
+
+        <div class="totals">
+          <div><span id="count">0</span> pixel<span id="plural"></span> selected</div>
+          <div class="total" id="total">$0</div>
+        </div>
+
+        <div class="cart-actions">
+          <button id="clearBtn" class="ghost" disabled>Clear</button>
+          <button id="checkoutBtn" class="primary" disabled>Select some pixels</button>
+        </div>
+        <p class="fineprint" id="fineprint"></p>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

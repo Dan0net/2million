@@ -1,0 +1,16 @@
+{
+  "name": "rent-a-pixel",
+  "version": "1.0.0",
+  "description": "Rent-a-Pixel — rent a pixel for $1/month or buy it for life for $1000. A circular pixel canvas.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "netlify dev",
+    "deploy": "netlify deploy --build --prod"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0",
+    "pngjs": "^7.0.0",
+    "stripe": "^17.5.0"
+  }
+}
