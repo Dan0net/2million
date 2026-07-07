@@ -46,6 +46,21 @@ export function createBoardView({
 
   function clampScale(s) { return Math.max(MIN_SCALE(), Math.min(MAX_SCALE, s)); }
 
+  // Keep the board covering the window: never pan past its edges. Horizontally
+  // the board always fills the width; vertically the top stays flush (a shorter
+  // board keeps its bottom gap), and a taller board can pan down to its bottom.
+  function clampFor(s, ox, oy) {
+    const r = canvasEl.getBoundingClientRect();
+    const bw = width * s, bh = height * s;
+    const minX = Math.min(0, r.width - bw);
+    const minY = Math.min(0, r.height - bh);
+    return {
+      ox: Math.min(0, Math.max(minX, ox)),
+      oy: Math.min(0, Math.max(minY, oy)),
+    };
+  }
+  function clampOffsets() { ({ ox: offX, oy: offY } = clampFor(scale, offX, offY)); }
+
   // screen (CSS px) → board pixel
   function toBoard(sx, sy) {
     return { x: Math.floor((sx - offX) / scale), y: Math.floor((sy - offY) / scale) };
@@ -143,7 +158,8 @@ export function createBoardView({
     const target = VISIBLE_SCALE;
     const centreX = r.width / 2;
     const centreY = getTopInset() + availHeight(r) / 2;
-    animateTo(target, centreX - (x + 0.5) * target, centreY - (y + 0.5) * target, 650);
+    const t = clampFor(target, centreX - (x + 0.5) * target, centreY - (y + 0.5) * target);
+    animateTo(target, t.ox, t.oy, 650);
   }
 
   function zoomAt(sx, sy, factor) {
@@ -153,6 +169,7 @@ export function createBoardView({
     offX = sx - (sx - offX) * f;
     offY = sy - (sy - offY) * f;
     scale = next;
+    clampOffsets();
     render();
   }
 
@@ -202,6 +219,7 @@ export function createBoardView({
       prevMid = mid;
       pinchDist = dist;
       moved = true;
+      clampOffsets();
       render();
       return;
     }
@@ -211,6 +229,7 @@ export function createBoardView({
     if (Math.abs(p.x - downPos.x) > 3 || Math.abs(p.y - downPos.y) > 3) moved = true;
     offX += dx;
     offY += dy;
+    clampOffsets();
     render();
   });
 
@@ -238,6 +257,7 @@ export function createBoardView({
   window.addEventListener("resize", () => {
     resize();
     scale = Math.max(scale, MIN_SCALE());
+    clampOffsets();
     render();
   });
 
