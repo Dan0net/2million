@@ -5,19 +5,26 @@
 import { createBoardView } from "./canvas.js";
 import { createCart } from "./cart.js";
 
-// r/place-style palette: saturated, even hue coverage, real blues, greyscale ramp.
+// r/place-style palette: saturated, even hue coverage, real blues, greyscale
+// ramp. Leads with a vibrant red (the default); the dark maroon sits with the
+// dark tones near the end.
 const PRESETS = [
-  "#6d001a", "#be0039", "#ff4500", "#ffa800", "#ffd635", "#fff8b8",
-  "#00a368", "#00cc78", "#7eed56", "#00756f", "#009eaa", "#00ccc0",
+  "#be0039", "#ff4500", "#ffa800", "#ffd635", "#fff8b8",
+  "#00cc78", "#7eed56", "#00a368", "#00756f", "#009eaa", "#00ccc0",
   "#2450a4", "#3690ea", "#51e9f4", "#493ac1", "#6a5cff", "#94b3ff",
   "#811e9f", "#b44ac0", "#e4abff", "#de107f", "#ff3881", "#ff99aa",
-  "#6d482f", "#9c6926", "#ffb470", "#000000", "#515252", "#898d90", "#d4d7d9", "#ffffff",
+  "#6d482f", "#9c6926", "#ffb470",
+  "#6d001a", "#000000", "#515252", "#898d90", "#d4d7d9", "#ffffff",
 ];
 
 const els = {
   canvas: document.getElementById("board"),
   bar: document.getElementById("bar"),
   swatches: document.getElementById("swatches"),
+  customSwatch: document.getElementById("customSwatch"),
+  customPop: document.getElementById("customPop"),
+  colorInput: document.getElementById("colorInput"),
+  hexInput: document.getElementById("hexInput"),
   clearBtn: document.getElementById("clearBtn"),
   buyBtn: document.getElementById("buyBtn"),
   toast: document.getElementById("toast"),
@@ -57,13 +64,24 @@ function normalizeUrl(raw) {
   return { ok: false };
 }
 
-// Active paint colour (defaults to the first swatch).
+const HEX6 = /^#[0-9a-f]{6}$/i;
+
+// Active paint colour (defaults to the first swatch — the vibrant red).
 let activeColor = PRESETS[0];
 function setColor(c) {
   activeColor = c;
+  const lc = c.toLowerCase();
+  let matched = false;
   for (const b of els.swatches.children) {
-    b.classList.toggle("active", b.dataset.color === c.toLowerCase());
+    if (!b.dataset.color) continue; // skip the custom swatch
+    const on = b.dataset.color === lc;
+    b.classList.toggle("active", on);
+    if (on) matched = true;
   }
+  // Custom swatch is "active" whenever the colour isn't one of the presets.
+  els.customSwatch.classList.toggle("active", !matched);
+  if (HEX6.test(c)) els.colorInput.value = c;
+  els.hexInput.value = lc;
 }
 function buildSwatches() {
   for (const c of PRESETS) {
@@ -71,9 +89,23 @@ function buildSwatches() {
     b.style.background = c;
     b.dataset.color = c.toLowerCase();
     b.title = c;
-    b.addEventListener("click", () => setColor(c));
+    b.addEventListener("click", () => { setColor(c); els.customPop.hidden = true; });
     els.swatches.appendChild(b);
   }
+}
+
+// Custom colour: the first swatch toggles a popover with a colour wheel + hex field.
+function wireCustomPicker() {
+  els.customSwatch.addEventListener("click", () => {
+    els.customPop.hidden = !els.customPop.hidden;
+    if (!els.customPop.hidden) els.hexInput.focus();
+  });
+  els.colorInput.addEventListener("input", (e) => setColor(e.target.value));
+  els.hexInput.addEventListener("input", (e) => {
+    let v = e.target.value.trim();
+    if (v && v[0] !== "#") v = "#" + v;
+    if (HEX6.test(v)) setColor(v.toLowerCase());
+  });
 }
 
 // `v` is a cache key: the config `rev` for the cacheable initial load, or
@@ -141,6 +173,7 @@ function showTooltip(x, y, sx, sy) {
 
 async function main() {
   buildSwatches();
+  wireCustomPicker();
   setColor(activeColor);
 
   const cfg = await fetch("/api/config", { cache: "no-store" }).then((r) => r.json());

@@ -6,7 +6,7 @@
     <title>2 Million Dollar Homepage</title>
     <meta name="description" content="Two million pixels. $1 each, yours forever. Paint a pixel, add your link, own a piece of the homepage." />
     <meta name="theme-color" content="#6b7280" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23111'/%3E%3Crect x='40' y='40' width='20' height='20' fill='%23e63946'/%3E%3C/svg%3E" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
@@ -26,7 +26,17 @@
       <section id="bar" class="bar" aria-label="Colours and checkout">
         <p class="bar-title">The 2 Million Dollar Pixel Homepage</p>
         <p class="bar-hint">2 million pixels — $1 per pixel — Own your slice of internet history!</p>
-        <div class="swatches" id="swatches"></div>
+
+        <!-- Custom colour picker (hex field + colour wheel), toggled from the first swatch -->
+        <div id="customPop" class="custom-pop" hidden>
+          <input type="color" id="colorInput" value="#be0039" aria-label="Pick any colour" />
+          <input type="text" id="hexInput" class="hex" maxlength="7" placeholder="#rrggbb"
+                 spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="Hex colour code" />
+        </div>
+
+        <div class="swatches" id="swatches">
+          <button id="customSwatch" class="custom" title="Custom colour" aria-label="Custom colour"></button>
+        </div>
         <div class="actions">
           <button id="clearBtn" class="ghost">Clear</button>
           <button id="buyBtn" class="primary">Buy</button>

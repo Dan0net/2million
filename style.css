@@ -66,6 +66,34 @@ html, body {
 }
 .swatches button.active { border-color: #fff; transform: scale(1.05); }
 
+/* First swatch = custom colour: a rainbow tile that opens the picker popover. */
+.swatches button.custom {
+  background: conic-gradient(from 0deg, #ff0000, #ffe000, #00e000, #00e0e0, #0060ff, #b400ff, #ff0080, #ff0000);
+}
+.swatches button.custom.active { border-color: #fff; }
+
+.custom-pop {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.custom-pop input[type="color"] {
+  width: 40px; height: 34px; padding: 0; border: 1px solid var(--border);
+  border-radius: 8px; background: none; cursor: pointer; flex: 0 0 auto;
+}
+.custom-pop .hex {
+  flex: 1 1 0; min-width: 0;
+  padding: 9px 11px; font-size: 15px; font-family: ui-monospace, monospace;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+}
+.custom-pop .hex:focus { outline: none; border-color: var(--accent); }
+
 .bar-title {
   margin: 0 0 1px;
   font-size: 15px;
