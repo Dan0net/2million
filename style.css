@@ -92,12 +92,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 /* ── Buy modal ────────────────────────────── */
 .modal {
   position: fixed; inset: 0; z-index: 60;
+  height: 100dvh;
   background: rgba(0, 0, 0, 0.55);
-  display: flex; align-items: center; justify-content: center;
-  padding: 20px;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 6vh 16px 16px;
+  overflow-y: auto; /* card stays reachable above the mobile keyboard */
 }
 .modal-card {
   width: min(400px, 100%);
+  margin: auto 0; /* centred when there's room, top-aligned when the keyboard shrinks the view */
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -127,8 +130,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   border-radius: 10px;
   padding: 10px 12px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-  transform: translate(-50%, calc(-100% - 12px));
+  transform: translate(-50%, calc(-100% - 12px)); /* above the tap by default */
 }
+.tooltip.below { transform: translate(-50%, 12px); } /* flipped below when clipped at top */
 .tt-desc { margin: 0 0 6px; font-size: 13px; word-break: break-word; }
 .tt-link { font-size: 12px; color: #7cc4ff; word-break: break-all; }
 

@@ -34,14 +34,15 @@ export function createBoardView({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  // Fit the whole board, centred in the band above the bar.
+  // Fill the viewport width, flush to the top-left (no side/top margin). The
+  // board is shorter than a tall phone at this scale, so a gap sits at the
+  // bottom; a taller-than-viewport board is pannable.
   function resetView() {
     resize();
     const r = canvasEl.getBoundingClientRect();
-    const top = getTopInset();
-    scale = fitScale() * 0.98;
-    offX = (r.width - width * scale) / 2;
-    offY = top + (availHeight(r) - height * scale) / 2;
+    scale = r.width / width;
+    offX = 0;
+    offY = 0;
     render();
   }
 

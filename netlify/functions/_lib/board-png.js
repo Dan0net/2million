@@ -6,7 +6,7 @@
 // giant JSON list to the client.
 
 import { PNG } from "pngjs";
-import { store, BOARD_KEY } from "./blobs.js";
+import { store, BOARD_KEY, VERSION_KEY, BOARD_VERSION } from "./blobs.js";
 import { WIDTH, HEIGHT, hexToRgb } from "./pixels.js";
 
 // A fresh, fully-transparent board.
@@ -23,8 +23,20 @@ export function decode(buffer) {
   return PNG.sync.read(buffer);
 }
 
+// One-time reset: if the stored board predates the current BOARD_VERSION,
+// overwrite it with a fresh blank board. Runs once (then it's a cheap no-op),
+// so we never keep any per-request dimension-guessing logic around.
+export async function ensureVersion(s = store()) {
+  const ver = await s.get(VERSION_KEY, { type: "text" });
+  if (ver !== BOARD_VERSION) {
+    await s.set(BOARD_KEY, encode(blankPNG()));
+    await s.set(VERSION_KEY, BOARD_VERSION);
+  }
+}
+
 // Load the current board, creating a blank one on first use.
 export async function loadBoard(s = store()) {
+  await ensureVersion(s);
   const buf = await s.get(BOARD_KEY, { type: "arrayBuffer" });
   if (!buf) return blankPNG();
   return decode(Buffer.from(buf));
@@ -54,10 +66,3 @@ export function paint(png, pixels) {
   }
 }
 
-// Clear an array of { x, y } back to transparent (buyable again).
-export function clear(png, pixels) {
-  for (const { x, y } of pixels) {
-    const i = idx(x, y);
-    png.data[i] = png.data[i + 1] = png.data[i + 2] = png.data[i + 3] = 0;
-  }
-}

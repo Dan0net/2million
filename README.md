@@ -1,8 +1,8 @@
 # 2 Million Dollar Homepage 🟥
 
-A **1000×2000** grid — **2,000,000 pixels**, **$1 each, yours forever**. Pick a
-colour, tap pixels, add a description + link, and buy. Tapping an owned pixel
-shows its description and a clickable link.
+A **1250×1600** grid — **2,000,000 pixels**, **$1 each, yours forever**. Pick a
+colour, tap pixels, add a description (and an optional link), and buy. Tapping
+an owned pixel shows its description and, if given, a clickable link.
 
 - **No database, no Prisma.** The board is a single **PNG** stored in
   [Netlify Blobs](https://docs.netlify.com/blobs/overview/); the browser reads
@@ -30,7 +30,9 @@ Storage (one Netlify Blobs store, `rentapixel`):
 - `board.png` — the canonical image everyone sees. Updated **only when pixels
   are bought** (claim / webhook).
 - `orders/<id>.json` — `{ id, pixels:[{x,y,color}], description, url, createdAt }`,
-  the source of truth for each purchase (also powers the pixel tooltip).
+  the source of truth for each purchase (also powers the pixel tooltip). `url` may
+  be empty (the link is optional; a bare domain is normalised to `https://`).
+- `board.version` — a marker used for a one-time board reset (see `BOARD_VERSION`).
 - `sessions/<id>.json` — a pending purchase stashed during Stripe checkout, read
   by the webhook.
 

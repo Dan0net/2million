@@ -36,10 +36,20 @@ function toast(msg, kind = "") {
   toastTimer = setTimeout(() => (els.toast.className = "toast " + kind), 3200);
 }
 
-const validUrl = (u) => {
-  try { const p = new URL(u); return p.protocol === "http:" || p.protocol === "https:"; }
-  catch { return false; }
-};
+// URL is optional; a bare domain ("example.com") becomes "https://example.com".
+// Returns { ok: true, url } (url may be "") or { ok: false }.
+function normalizeUrl(raw) {
+  const s = (raw || "").trim();
+  if (!s) return { ok: true, url: "" };
+  const cand = /^https?:\/\//i.test(s) ? s : "https://" + s;
+  try {
+    const u = new URL(cand);
+    if ((u.protocol === "http:" || u.protocol === "https:") && u.hostname.includes(".")) {
+      return { ok: true, url: u.href };
+    }
+  } catch { /* fall through */ }
+  return { ok: false };
+}
 
 // Active paint colour (defaults to the first swatch).
 let activeColor = PRESETS[0];
@@ -83,16 +93,25 @@ async function showTooltip(x, y, sx, sy) {
   } catch { /* ignore */ }
   if (!data) return;
   els.ttDesc.textContent = data.description || "";
-  if (data.url && validUrl(data.url)) {
+  if (data.url && /^https?:\/\//i.test(data.url)) {
     els.ttLink.href = data.url;
-    els.ttLink.textContent = data.url;
+    els.ttLink.textContent = data.url.replace(/^https?:\/\//, "");
     els.ttLink.hidden = false;
   } else {
     els.ttLink.hidden = true;
   }
+
+  // Show, then keep it fully on-screen: flip below the tap when there's no
+  // room above (board is flush to the top), and clamp horizontally.
+  els.tooltip.classList.remove("below");
   els.tooltip.style.left = sx + "px";
   els.tooltip.style.top = sy + "px";
   els.tooltip.hidden = false;
+  const tw = els.tooltip.offsetWidth;
+  const th = els.tooltip.offsetHeight;
+  if (sy - th - 12 < 8) els.tooltip.classList.add("below");
+  const vw = window.innerWidth;
+  els.tooltip.style.left = Math.min(Math.max(sx, 8 + tw / 2), vw - 8 - tw / 2) + "px";
 }
 
 async function main() {
@@ -149,8 +168,13 @@ async function main() {
   cart.refresh();
 
   // ── Buy modal ──
+  // Dismiss the tooltip as soon as the user starts a new gesture.
+  els.canvas.addEventListener("pointerdown", hideTooltip);
+
   function openModal() {
+    hideTooltip();
     els.modalErr.textContent = "";
+    els.modalContinue.textContent = `Buy $${selection.size}`;
     els.modal.hidden = false;
     els.descInput.focus();
   }
@@ -164,11 +188,11 @@ async function main() {
   els.modal.addEventListener("click", (e) => { if (e.target === els.modal) closeModal(); });
   els.modalContinue.addEventListener("click", async () => {
     const description = els.descInput.value.trim();
-    const url = els.urlInput.value.trim();
+    const link = normalizeUrl(els.urlInput.value); // URL is optional
     if (!description) { els.modalErr.textContent = "Please add a description."; return; }
-    if (!validUrl(url)) { els.modalErr.textContent = "Enter a valid URL (http:// or https://)."; return; }
+    if (!link.ok) { els.modalErr.textContent = "That link doesn't look valid (e.g. example.com)."; return; }
     els.modalContinue.disabled = true;
-    const { ok } = await cart.checkout({ description, url });
+    const { ok } = await cart.checkout({ description, url: link.url });
     els.modalContinue.disabled = false;
     if (ok) { closeModal(); els.descInput.value = ""; els.urlInput.value = ""; }
   });

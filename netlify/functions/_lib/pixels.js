@@ -1,8 +1,8 @@
 // Geometry + validation for the rectangular pixel board.
 // Shared by every function so the rules live in exactly one place.
 
-export const WIDTH = 1000;
-export const HEIGHT = 2000; // 1000 × 2000 = 2,000,000 pixels ($1 each)
+export const WIDTH = 1250;
+export const HEIGHT = 1600; // 1250 × 1600 = 2,000,000 pixels ($1 each)
 export const MAX_PIXELS_PER_ORDER = 5000; // guard against giant payloads
 export const MAX_DESC = 140;
 
@@ -60,22 +60,34 @@ export function validateSelection(input) {
   return { ok: true, pixels };
 }
 
-// Validate the description + link attached to a purchase.
+// Normalise a user-supplied link. The URL is OPTIONAL and the scheme may be
+// omitted (a bare domain like "example.com" becomes "https://example.com").
+// Returns { ok: true, url } (url may be "") or { ok: false }.
+export function normalizeUrl(raw) {
+  const s = typeof raw === "string" ? raw.trim() : "";
+  if (!s) return { ok: true, url: "" };
+  const candidate = /^https?:\/\//i.test(s) ? s : "https://" + s;
+  let u;
+  try {
+    u = new URL(candidate);
+  } catch {
+    return { ok: false };
+  }
+  if ((u.protocol !== "http:" && u.protocol !== "https:") || !u.hostname.includes(".")) {
+    return { ok: false };
+  }
+  return { ok: true, url: u.href };
+}
+
+// Validate the description (required) + link (optional) attached to a purchase.
 // Returns { ok: true, description, url } or { ok: false, error }.
 export function validateMeta({ description, url } = {}) {
   const desc = typeof description === "string" ? description.trim().replace(/\s+/g, " ") : "";
   if (!desc) return { ok: false, error: "A description is required." };
   if (desc.length > MAX_DESC) return { ok: false, error: `Description too long (max ${MAX_DESC}).` };
 
-  const raw = typeof url === "string" ? url.trim() : "";
-  let parsed;
-  try {
-    parsed = new URL(raw);
-  } catch {
-    return { ok: false, error: "Enter a valid URL (starting with http:// or https://)." };
-  }
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    return { ok: false, error: "URL must start with http:// or https://." };
-  }
-  return { ok: true, description: desc.slice(0, MAX_DESC), url: parsed.href };
+  const link = normalizeUrl(url);
+  if (!link.ok) return { ok: false, error: "That link doesn't look like a valid domain or URL." };
+
+  return { ok: true, description: desc.slice(0, MAX_DESC), url: link.url };
 }
