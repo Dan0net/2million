@@ -6,9 +6,10 @@
   --text: #e8ecf1;
   --muted: #9aa4b2;
   --accent: #e63946;
+  --buy: #457b9d;
   --ok: #2a9d8f;
   --shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
-  --sheet-pad: max(14px, env(safe-area-inset-bottom));
+  --bar-pad: max(12px, env(safe-area-inset-bottom));
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -23,26 +24,30 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Top bar (always visible) ─────────────── */
+/* ── Title (prominent, outlined) ──────────── */
 .topbar {
   position: fixed;
-  top: 0; left: 0;
+  top: 0; left: 0; right: 0;
   z-index: 30;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
+  padding: calc(12px + env(safe-area-inset-top)) 16px 10px;
   pointer-events: none;
-}
-.brand-dot {
-  width: 15px; height: 15px; border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #ff6b78, var(--accent));
-  box-shadow: 0 0 14px rgba(230, 57, 70, 0.7);
+  text-align: center;
 }
 .topbar h1 {
-  font-size: 18px; margin: 0; letter-spacing: -0.02em;
-  text-shadow: 0 1px 10px rgba(0,0,0,0.6);
+  display: inline-block;
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #fff;
+  -webkit-text-stroke: 1.5px #0e1116;
+  text-shadow:
+    -2px -2px 0 #0e1116, 2px -2px 0 #0e1116,
+    -2px 2px 0 #0e1116, 2px 2px 0 #0e1116,
+    0 2px 12px rgba(0, 0, 0, 0.55);
+  paint-order: stroke fill;
 }
+@media (min-width: 768px) { .topbar h1 { font-size: 38px; } }
 
 /* ── Stage / canvas ───────────────────────── */
 .stage { position: fixed; inset: 0; }
@@ -54,17 +59,16 @@ html, body {
   touch-action: none;
 }
 
-/* ── Zoom controls (shown with the sheet) ─── */
+/* ── Zoom controls (always visible) ───────── */
 .zoomctl {
   position: fixed;
   right: 12px;
-  top: 50%;
+  top: 46%;
   transform: translateY(-50%);
   z-index: 26;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  transition: opacity 0.2s;
 }
 .zoomctl button {
   width: 40px; height: 40px; font-size: 18px; line-height: 1;
@@ -77,123 +81,85 @@ html, body {
 }
 .zoomctl button:active { transform: scale(0.94); }
 
-/* ── Bottom sheet ─────────────────────────── */
-.sheet {
+/* ── Bottom bar (always visible) ──────────── */
+.bar {
   position: fixed;
   left: 0; right: 0; bottom: 0;
   z-index: 25;
   background: var(--sheet);
   border-top: 1px solid var(--border);
-  border-radius: 18px 18px 0 0;
+  border-radius: 16px 16px 0 0;
   box-shadow: var(--shadow);
-  padding: 6px 16px var(--sheet-pad);
-  max-height: 66vh;
-  overflow-y: auto;
-  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
-}
-.grip {
-  display: block;
-  width: 40px; height: 5px;
-  margin: 6px auto 10px;
-  border: none; padding: 0;
-  border-radius: 999px;
-  background: #3a424e;
-  cursor: pointer;
+  padding: 12px 14px var(--bar-pad);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-/* Colours section */
-.sheet-colours { display: none; }
-.sheet.colours-open .sheet-colours { display: block; }
-.colours-label {
-  margin: 0 0 8px; font-size: 12px; color: var(--muted);
-  text-transform: uppercase; letter-spacing: 0.06em;
-}
-.colours-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+/* Row 1 — all colours on one row */
 .swatches {
-  display: flex; gap: 8px; overflow-x: auto; flex: 1;
-  padding-bottom: 4px; scrollbar-width: none;
+  display: flex;
+  gap: 5px;
+  align-items: center;
 }
-.swatches::-webkit-scrollbar { display: none; }
+.swatches button,
+.swatches .custom {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 32px;
+  border-radius: 7px;
+  cursor: pointer;
+  padding: 0;
+}
 .swatches button {
-  flex: 0 0 auto;
-  width: 34px; height: 34px;
-  border: 2px solid rgba(255, 255, 255, 0.15); border-radius: 9px;
-  cursor: pointer; padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.14);
 }
-.swatches button.active { border-color: #fff; transform: scale(1.06); }
-.custom { flex: 0 0 auto; }
+.swatches button.active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--sheet), 0 0 0 3px #fff;
+}
+.custom { position: relative; display: block; overflow: hidden; border: 1px solid var(--border); }
+.custom::after {
+  content: "🎨";
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; pointer-events: none;
+}
 input[type="color"] {
-  width: 40px; height: 34px; padding: 0; border: 1px solid var(--border);
-  border-radius: 9px; background: none; cursor: pointer;
+  width: 100%; height: 100%; padding: 0; border: none; background: none; cursor: pointer;
 }
 
-/* Body of the sheet */
-.summary { display: flex; align-items: center; gap: 12px; }
-.active-chip {
-  flex: 0 0 auto;
-  width: 34px; height: 34px; border-radius: 9px;
-  border: 2px solid rgba(255, 255, 255, 0.6);
-  background: var(--accent);
-  cursor: pointer; padding: 0;
-}
-.summary-text { flex: 1; font-size: 14px; color: var(--muted); }
-.summary-text b { color: var(--text); font-size: 16px; }
-
-.modes { display: flex; gap: 4px; background: var(--bg); padding: 3px; border-radius: 10px; border: 1px solid var(--border); }
-.seg { position: relative; cursor: pointer; }
-.seg input { position: absolute; opacity: 0; pointer-events: none; }
-.seg span {
-  display: flex; flex-direction: column; align-items: center; line-height: 1.1;
-  padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--muted);
-}
-.seg small { font-size: 10px; font-weight: 500; opacity: 0.8; }
-.seg:has(input:checked) span { background: var(--accent); color: #fff; }
-
-.total-row {
-  display: flex; align-items: baseline; justify-content: space-between;
-  margin: 12px 0 4px; padding-top: 12px; border-top: 1px solid var(--border);
-  font-size: 13px; color: var(--muted);
-}
-.total { font-size: 24px; font-weight: 700; color: var(--text); }
-
-.actions { display: flex; gap: 8px; margin-top: 10px; }
+/* Row 2 — Clear / Buy / Rent */
+.actions { display: flex; gap: 8px; }
 button.primary, button.ghost {
-  border-radius: 11px; padding: 13px 14px; font-size: 15px; font-weight: 600;
-  cursor: pointer; border: 1px solid transparent;
+  border-radius: 11px; padding: 13px 12px; font-size: 15px; font-weight: 700;
+  cursor: pointer; border: 1px solid transparent; white-space: nowrap;
 }
-button.primary { flex: 1; background: var(--accent); color: #fff; }
+button.ghost { background: transparent; color: var(--muted); border-color: var(--border); flex: 0 0 auto; padding-inline: 18px; }
+button.primary { flex: 1 1 0; color: #fff; }
+button.buy { background: var(--buy); }
+button.rent { background: var(--accent); }
 button.primary:active:not(:disabled) { transform: scale(0.99); }
-button.ghost { background: transparent; color: var(--muted); border-color: var(--border); padding-inline: 18px; }
-button:disabled { opacity: 0.45; cursor: not-allowed; }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.fineprint { margin: 10px 2px 0; font-size: 11px; color: var(--muted); min-height: 14px; text-align: center; }
-
-/* ── State: idle (landing) — only title + canvas ── */
-body.ui-idle .sheet { transform: translateY(110%); }
-body.ui-idle .zoomctl { opacity: 0; pointer-events: none; }
-
-/* ── Desktop: dock the sheet as a centered card ── */
+/* ── Desktop: dock the bar as a centered card ── */
 @media (min-width: 768px) {
-  .topbar h1 { font-size: 20px; }
-  .sheet {
+  .bar {
     left: 50%; right: auto;
     bottom: 18px;
     transform: translateX(-50%);
     width: min(460px, calc(100vw - 36px));
     border-radius: 16px;
     border: 1px solid var(--border);
-    max-height: 76vh;
-    padding: 6px 18px 16px;
+    padding: 14px;
   }
-  body.ui-idle .sheet { transform: translate(-50%, 160%); }
   .zoomctl { top: auto; bottom: 24px; right: 24px; transform: none; }
-  .grip { cursor: pointer; }
 }
 
 /* ── Toast ────────────────────────────────── */
 .toast {
   position: fixed; left: 50%;
-  bottom: calc(var(--sheet-pad) + 78px);
+  bottom: calc(var(--bar-pad) + 96px);
   transform: translateX(-50%) translateY(16px);
   z-index: 50;
   background: #22262e; color: var(--text);
@@ -201,7 +167,6 @@ body.ui-idle .zoomctl { opacity: 0; pointer-events: none; }
   padding: 10px 16px; font-size: 13px; box-shadow: 0 8px 30px rgba(0,0,0,0.45);
   opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; max-width: 84vw; text-align: center;
 }
-body.ui-idle .toast { bottom: 24px; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.ok { border-color: var(--ok); }
 .toast.err { border-color: var(--accent); }

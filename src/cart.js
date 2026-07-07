@@ -1,45 +1,22 @@
-// Cart panel: shows the running total, rent/buy mode, and drives checkout.
-// In TEST MODE it claims pixels for free via /api/claim; otherwise it creates
-// a Stripe Checkout session via /api/checkout and redirects to it.
+// Checkout controls: Clear / Buy / Rent buttons. Each of Buy/Rent triggers a
+// checkout in its mode — claim for free in TEST MODE, otherwise a Stripe
+// Checkout session (redirect to its URL).
 
-export function createCart({ selection, testMode, els, toast, onAfterClaim, render, onClear }) {
-  function mode() {
-    return document.querySelector('input[name="mode"]:checked').value; // "rent" | "buy"
-  }
-
-  function fmt(n) {
-    return "$" + n.toLocaleString("en-US");
-  }
+export function createCart({ selection, testMode, els, toast, onAfterClaim, render }) {
+  const fmt = (n) => "$" + n.toLocaleString("en-US");
+  let busy = false;
 
   function refresh() {
     const n = selection.size;
-    els.count.textContent = String(n);
-    els.plural.textContent = n === 1 ? "" : "s";
-
-    const m = mode();
-    els.total.textContent = m === "rent" ? `${fmt(n)}/mo` : fmt(n * 1000);
-
-    els.clearBtn.disabled = n === 0;
-    els.checkoutBtn.disabled = n === 0 || busy;
-
-    if (n === 0) {
-      els.checkoutBtn.textContent = "Select some pixels";
-      els.fineprint.textContent = "";
-    } else if (testMode) {
-      els.checkoutBtn.textContent = busy ? "Claiming…" : `Claim ${n} pixel${n === 1 ? "" : "s"} (free)`;
-      els.fineprint.textContent = "Test mode: no payment — pixels are claimed instantly.";
-    } else if (m === "rent") {
-      els.checkoutBtn.textContent = busy ? "Redirecting…" : `Rent ${n} · ${fmt(n)}/mo`;
-      els.fineprint.textContent = "You'll be sent to Stripe to start a $1/month-per-pixel subscription.";
-    } else {
-      els.checkoutBtn.textContent = busy ? "Redirecting…" : `Buy ${n} · ${fmt(n * 1000)}`;
-      els.fineprint.textContent = "You'll be sent to Stripe for a one-time payment. Yours forever.";
-    }
+    const disabled = n === 0 || busy;
+    els.clearBtn.disabled = disabled;
+    els.rentBtn.disabled = disabled;
+    els.buyBtn.disabled = disabled;
+    els.rentBtn.textContent = n ? `Rent · ${fmt(n)}/mo` : "Rent";
+    els.buyBtn.textContent = n ? `Buy · ${fmt(n * 1000)}` : "Buy";
   }
 
-  let busy = false;
-
-  async function checkout() {
+  async function checkout(mode) {
     const pixels = [...selection.values()];
     if (!pixels.length || busy) return;
     busy = true;
@@ -49,14 +26,15 @@ export function createCart({ selection, testMode, els, toast, onAfterClaim, rend
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pixels, mode: mode() }),
+        body: JSON.stringify({ pixels, mode }),
       });
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         if (data.conflicts?.length) {
           for (const c of data.conflicts) selection.delete(c.y * data.width + c.x);
-          toast(`${data.conflicts.length} pixel(s) were just taken and were removed from your selection.`, "err");
+          render();
+          toast(`${data.conflicts.length} pixel(s) were just taken and were removed.`, "err");
         } else {
           toast(data.error || "Something went wrong. Try again.", "err");
         }
@@ -84,12 +62,9 @@ export function createCart({ selection, testMode, els, toast, onAfterClaim, rend
     selection.clear();
     render();
     refresh();
-    onClear?.();
   });
-  els.checkoutBtn.addEventListener("click", checkout);
-  for (const r of document.querySelectorAll('input[name="mode"]')) {
-    r.addEventListener("change", refresh);
-  }
+  els.rentBtn.addEventListener("click", () => checkout("rent"));
+  els.buyBtn.addEventListener("click", () => checkout("buy"));
 
   return { refresh };
 }

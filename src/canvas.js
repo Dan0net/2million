@@ -2,10 +2,15 @@
 // handles pan / zoom / tap-to-paint. Board-pixel coordinates are integers in
 // [0, width) × [0, height); the circle is centred at (width/2, height/2).
 
-export function createBoardView({ canvasEl, width, height, radius, selection, onPixelClick }) {
+export function createBoardView({
+  canvasEl, width, height, radius, selection, onPixelClick,
+  getTopInset = () => 0, getBottomInset = () => 0,
+}) {
   const ctx = canvasEl.getContext("2d");
   const cx = width / 2;
   const cy = height / 2;
+
+  const VISIBLE_SCALE = 18; // scale at which individual pixels read clearly
 
   let board = null; // { canvas, isTaken(x,y) }
   let pending = null; // { x, y } being coloured, or null
@@ -16,9 +21,12 @@ export function createBoardView({ canvasEl, width, height, radius, selection, on
   const MIN_SCALE = () => fitScale() * 0.9;
   const MAX_SCALE = 40;
 
+  // Vertical band left for the board once the title + bar are accounted for.
+  function availHeight(r) { return r.height - getTopInset() - getBottomInset(); }
+
   function fitScale() {
     const r = canvasEl.getBoundingClientRect();
-    return Math.min(r.width, r.height) / width;
+    return Math.min(r.width, availHeight(r)) / width;
   }
 
   function resize() {
@@ -32,9 +40,10 @@ export function createBoardView({ canvasEl, width, height, radius, selection, on
   function resetView() {
     resize();
     const r = canvasEl.getBoundingClientRect();
+    const top = getTopInset();
     scale = fitScale() * 0.92;
     offX = (r.width - width * scale) / 2;
-    offY = (r.height - height * scale) / 2;
+    offY = top + (availHeight(r) - height * scale) / 2; // centre in the band above the bar
     render();
   }
 
@@ -129,7 +138,41 @@ export function createBoardView({ canvasEl, width, height, radius, selection, on
     }
   }
 
+  // Animate scale/offset toward targets over ~180ms (ease-out).
+  let animId = 0;
+  function animateTo(tScale, tOffX, tOffY, ms = 180) {
+    cancelAnimationFrame(animId);
+    const sScale = scale, sOffX = offX, sOffY = offY;
+    let start = null;
+    function step(ts) {
+      if (start === null) start = ts;
+      const t = Math.min(1, (ts - start) / ms);
+      const e = 1 - Math.pow(1 - t, 3); // easeOutCubic
+      scale = sScale + (tScale - sScale) * e;
+      offX = sOffX + (tOffX - sOffX) * e;
+      offY = sOffY + (tOffY - sOffY) * e;
+      render();
+      if (t < 1) animId = requestAnimationFrame(step);
+    }
+    animId = requestAnimationFrame(step);
+  }
+
+  // Tapping a pixel: if zoomed out, zoom in and centre it so the new colour is
+  // clearly visible; if already zoomed in, just nudge it out from under the bar.
+  function zoomToPixel(x, y) {
+    if (scale >= VISIBLE_SCALE) {
+      ensurePixelVisible(x, y, getBottomInset());
+      return;
+    }
+    const r = canvasEl.getBoundingClientRect();
+    const target = VISIBLE_SCALE;
+    const centreX = r.width / 2;
+    const centreY = getTopInset() + availHeight(r) / 2;
+    animateTo(target, centreX - (x + 0.5) * target, centreY - (y + 0.5) * target);
+  }
+
   function zoomAt(sx, sy, factor) {
+    cancelAnimationFrame(animId);
     const next = clampScale(scale * factor);
     const f = next / scale;
     offX = sx - (sx - offX) * f;
@@ -143,6 +186,7 @@ export function createBoardView({ canvasEl, width, height, radius, selection, on
   let downPos = null;
   let moved = false;
   let pinchDist = 0;
+  let prevMid = null;
 
   function rel(e) {
     const r = canvasEl.getBoundingClientRect();
@@ -158,6 +202,7 @@ export function createBoardView({ canvasEl, width, height, radius, selection, on
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
       pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+      prevMid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
     }
   });
 
@@ -171,9 +216,20 @@ export function createBoardView({ canvasEl, width, height, radius, selection, on
       const [a, b] = [...pointers.values()];
       const dist = Math.hypot(a.x - b.x, a.y - b.y);
       const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-      if (pinchDist > 0) zoomAt(mid.x, mid.y, dist / pinchDist);
+      // Zoom around the midpoint AND pan by how far the midpoint moved,
+      // so the user can pinch-zoom and drag at the same time.
+      if (pinchDist > 0) {
+        const next = clampScale(scale * (dist / pinchDist));
+        const f = next / scale;
+        offX = mid.x - (mid.x - offX) * f;
+        offY = mid.y - (mid.y - offY) * f;
+        scale = next;
+      }
+      if (prevMid) { offX += mid.x - prevMid.x; offY += mid.y - prevMid.y; }
+      prevMid = mid;
       pinchDist = dist;
       moved = true;
+      render();
       return;
     }
 
@@ -190,7 +246,7 @@ export function createBoardView({ canvasEl, width, height, radius, selection, on
     if (!pointers.has(e.pointerId)) return;
     const p = pointers.get(e.pointerId);
     pointers.delete(e.pointerId);
-    if (pointers.size < 2) pinchDist = 0;
+    if (pointers.size < 2) { pinchDist = 0; prevMid = null; }
     if (!moved && pointers.size === 0) {
       const { x, y } = toBoard(p.x, p.y);
       if (x >= 0 && x < width && y >= 0 && y < height) onPixelClick(x, y);
@@ -213,6 +269,8 @@ export function createBoardView({ canvasEl, width, height, radius, selection, on
     setBoard,
     setPending,
     ensurePixelVisible,
+    zoomToPixel,
+    getScale: () => scale,
     zoomBy: (f) => {
       const r = canvasEl.getBoundingClientRect();
       zoomAt(r.width / 2, r.height / 2, f);
