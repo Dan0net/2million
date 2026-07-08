@@ -6,7 +6,7 @@
 // giant JSON list to the client.
 
 import { PNG } from "pngjs";
-import { store, BOARD_KEY, REV_KEY, VERSION_KEY, BOARD_VERSION, listOrders } from "./blobs.js";
+import { store, BOARD_KEY, REV_KEY, COUNT_KEY, VERSION_KEY, BOARD_VERSION, listOrders } from "./blobs.js";
 import { WIDTH, HEIGHT, hexToRgb } from "./pixels.js";
 
 // A fresh, fully-transparent board.
@@ -36,6 +36,7 @@ export async function ensureVersion(s = store()) {
   }
   await s.set(BOARD_KEY, encode(blankPNG()));
   await s.set(REV_KEY, String(Date.now()));
+  await s.set(COUNT_KEY, "0");
   await s.set(VERSION_KEY, BOARD_VERSION);
 }
 
@@ -60,6 +61,10 @@ export async function rebuildBoard(s = store()) {
     if (Array.isArray(o.pixels)) paint(png, o.pixels);
   }
   await saveBoard(png, s);
+  // Count unique sold (opaque) pixels straight off the rebuilt board.
+  let count = 0;
+  for (let i = 3; i < png.data.length; i += 4) if (png.data[i] > 0) count++;
+  await s.set(COUNT_KEY, String(count));
   return png;
 }
 

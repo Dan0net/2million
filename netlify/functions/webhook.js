@@ -4,9 +4,9 @@
 //   already taken, record the order (with buyer email), rebuild the board.
 
 import { stripe } from "./_lib/stripe.js";
-import { store, orderKey, sessionKey } from "./_lib/blobs.js";
-import { loadBoard, isTaken, rebuildBoard } from "./_lib/board-png.js";
-import { refundAmountForConflicts } from "./_lib/pixels.js";
+import { store, orderKey, sessionKey, listOrders } from "./_lib/blobs.js";
+import { rebuildBoard } from "./_lib/board-png.js";
+import { refundAmountForConflicts, key as pixelKey } from "./_lib/pixels.js";
 
 export const config = { path: "/api/webhook" };
 
@@ -50,10 +50,21 @@ async function fulfil(s, session) {
   if (!stash) return;
 
   // Split into pixels we can place vs. ones already owned by an earlier order.
-  const png = await loadBoard(s);
+  // Check against the ORDER RECORDS (the synchronously-written source of truth),
+  // not the board PNG which lags a rebuild behind — this tightens the race
+  // window for concurrent overlapping purchases. Residual risk: two webhooks
+  // committing overlapping pixels within the same instant can still both write
+  // before either is visible (Netlify Blobs has no atomic compare-and-swap);
+  // closing that fully needs an external atomic store.
+  const owned = new Set();
+  for (const o of await listOrders(s)) {
+    if (o.id !== orderId && Array.isArray(o.pixels)) {
+      for (const p of o.pixels) owned.add(pixelKey(p.x, p.y));
+    }
+  }
   const place = [];
   const conflicts = [];
-  for (const p of stash.pixels) (isTaken(png, p.x, p.y) ? conflicts : place).push(p);
+  for (const p of stash.pixels) (owned.has(pixelKey(p.x, p.y)) ? conflicts : place).push(p);
 
   // Refund the conflicting pixels proportionally to what was actually paid.
   // Do this BEFORE recording the order so a failure retries; the idempotency

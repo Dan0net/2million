@@ -64,6 +64,8 @@ const els = {
   bar: document.getElementById("bar"),
   swatches: document.getElementById("swatches"),
   customSwatch: document.getElementById("customSwatch"),
+  statSold: document.getElementById("statSold"),
+  statLeft: document.getElementById("statLeft"),
   clearBtn: document.getElementById("clearBtn"),
   buyBtn: document.getElementById("buyBtn"),
   toast: document.getElementById("toast"),
@@ -284,8 +286,15 @@ async function main() {
   createPicker();
   setColor(activeColor);
 
-  const cfg = await fetch("/api/config", { cache: "no-store" }).then((r) => r.json());
+  const fetchConfig = () => fetch("/api/config", { cache: "no-store" }).then((r) => r.json());
+  const cfg = await fetchConfig();
   const { width, height, testMode } = cfg;
+  const total = width * height;
+  function renderStats(count) {
+    els.statSold.textContent = Number(count || 0).toLocaleString("en-US");
+    els.statLeft.textContent = Math.max(0, total - (count || 0)).toLocaleString("en-US");
+  }
+  renderStats(cfg.count);
 
   const selection = new Map(); // key = y*width+x → { x, y, color }
   let board = await loadBoard(width, height, cfg.rev); // cacheable initial load
@@ -334,6 +343,7 @@ async function main() {
       view.setBoard(board);
       view.setHighlight(null);
       cart.refresh();
+      fetchConfig().then((c) => renderStats(c.count)).catch(() => {});
     },
   });
   els.clearBtn.addEventListener("click", () => view.setHighlight(null));
@@ -395,6 +405,7 @@ async function main() {
     setTimeout(async () => {
       board = await loadBoard(width, height, Date.now()); // force-fresh after payment
       view.setBoard(board);
+      fetchConfig().then((c) => renderStats(c.count)).catch(() => {});
     }, 1500);
     history.replaceState({}, "", location.pathname);
   } else if (params.get("status") === "cancel") {

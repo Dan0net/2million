@@ -117,11 +117,41 @@ html, body {
   text-align: center;
 }
 .bar-hint {
-  margin: 0 0 4px;
+  margin: 0 0 3px;
   font-size: 12px;
   color: var(--muted);
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
+.tos-i {
+  flex: 0 0 auto;
+  width: 18px; height: 18px; line-height: 16px;
+  border: 1px solid var(--border); border-radius: 50%;
+  color: var(--muted); text-decoration: none; font-size: 12px; text-align: center;
+}
+.tos-i:hover { color: var(--text); border-color: var(--muted); }
+.bar-stats {
+  margin: 0 0 6px;
+  font-size: 12px; color: var(--muted); text-align: center;
+}
+.bar-stats a { color: var(--text); }
+
+/* ── Standalone document pages (terms, leaderboard) ── */
+.doc {
+  max-width: 720px; margin: 0 auto; padding: 40px 20px 80px;
+  overflow-y: auto; height: 100dvh;
+}
+.doc h1 { font-size: 24px; margin: 0 0 8px; }
+.doc h2 { font-size: 16px; margin: 24px 0 6px; }
+.doc p, .doc li { color: var(--muted); line-height: 1.55; font-size: 14px; }
+.doc a { color: #7cc4ff; }
+.doc .back { display: inline-block; margin-bottom: 18px; color: var(--muted); text-decoration: none; }
+.doc table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+.doc th, .doc td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.doc th { color: var(--muted); font-weight: 600; }
+.doc td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* Row 2 — Clear + Buy */
 .actions { display: flex; gap: 8px; }

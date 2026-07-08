@@ -15,6 +15,7 @@ export function store() {
 
 export const BOARD_KEY = "board.png";
 export const REV_KEY = "board.rev"; // bumped on every board change; used as a cache key
+export const COUNT_KEY = "board.count"; // number of pixels sold (unique opaque pixels)
 export const VERSION_KEY = "board.version";
 // Bump to force a one-time full reset (wipes all orders + blanks the board).
 export const BOARD_VERSION = "3";

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Leaderboard · 2mill.io</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body style="background:#0e1116">
+    <div class="doc">
+      <a class="back" href="/">← back to the board</a>
+      <h1>Leaderboard</h1>
+      <p>Links ranked by how many pixels they own on the board.</p>
+      <div id="lb"><p>Loading…</p></div>
+    </div>
+
+    <script>
+      const host = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } };
+      const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+      fetch("/api/leaderboard")
+        .then((r) => r.json())
+        .then((rows) => {
+          const el = document.getElementById("lb");
+          if (!rows.length) { el.innerHTML = "<p>No pixels sold yet — be the first!</p>"; return; }
+          const body = rows.map((r, i) => `
+            <tr>
+              <td class="num">${i + 1}</td>
+              <td><a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${esc(host(r.url))}</a></td>
+              <td class="num">${r.pixels.toLocaleString("en-US")}</td>
+              <td class="num">$${r.pixels.toLocaleString("en-US")}</td>
+            </tr>`).join("");
+          el.innerHTML = `<table>
+            <thead><tr><th class="num">#</th><th>Link</th><th class="num">Pixels</th><th class="num">Value</th></tr></thead>
+            <tbody>${body}</tbody></table>`;
+        })
+        .catch(() => { document.getElementById("lb").innerHTML = "<p>Couldn’t load the leaderboard. Try again later.</p>"; });
+    </script>
+  </body>
+</html>
