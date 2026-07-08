@@ -16,7 +16,6 @@
     </div>
 
     <script>
-      const host = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } };
       const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
       fetch("/api/leaderboard")
         .then((r) => r.json())
@@ -26,12 +25,11 @@
           const body = rows.map((r, i) => `
             <tr>
               <td class="num">${i + 1}</td>
-              <td><a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${esc(host(r.url))}</a></td>
+              <td class="url"><a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${esc(r.url)}</a></td>
               <td class="num">${r.pixels.toLocaleString("en-US")}</td>
-              <td class="num">$${r.pixels.toLocaleString("en-US")}</td>
             </tr>`).join("");
           el.innerHTML = `<table>
-            <thead><tr><th class="num">#</th><th>Link</th><th class="num">Pixels</th><th class="num">Value</th></tr></thead>
+            <thead><tr><th class="num">#</th><th>Link</th><th class="num">Pixels</th></tr></thead>
             <tbody>${body}</tbody></table>`;
         })
         .catch(() => { document.getElementById("lb").innerHTML = "<p>Couldn’t load the leaderboard. Try again later.</p>"; });

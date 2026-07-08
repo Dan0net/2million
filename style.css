@@ -145,7 +145,8 @@ html, body {
 .doc table { width: 100%; border-collapse: collapse; margin-top: 12px; }
 .doc th, .doc td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--border); font-size: 14px; }
 .doc th { color: var(--muted); font-weight: 600; }
-.doc td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.doc td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.doc td.url { word-break: break-all; }
 
 /* Row 2 — Clear + Buy */
 .actions { display: flex; gap: 8px; }
