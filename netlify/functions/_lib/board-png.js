@@ -35,8 +35,9 @@ export async function ensureVersion(s = store()) {
     for (const b of blobs) await s.delete(b.key).catch(() => {});
   }
   await s.set(BOARD_KEY, encode(blankPNG()));
-  await s.set(REV_KEY, String(Date.now()));
-  await s.set(COUNT_KEY, "0");
+  const rev = String(Date.now());
+  await s.set(REV_KEY, rev);
+  await s.set(COUNT_KEY, `${rev}:0`);
   await s.set(VERSION_KEY, BOARD_VERSION);
 }
 
@@ -50,7 +51,28 @@ export async function loadBoard(s = store()) {
 
 export async function saveBoard(png, s = store()) {
   await s.set(BOARD_KEY, encode(png));
-  await s.set(REV_KEY, String(Date.now())); // new revision → busts the board cache
+  const rev = String(Date.now()); // new revision → busts the board cache
+  await s.set(REV_KEY, rev);
+  return rev;
+}
+
+// Count opaque (sold) pixels in a decoded board.
+function countOpaque(png) {
+  let n = 0;
+  for (let i = 3; i < png.data.length; i += 4) if (png.data[i] > 0) n++;
+  return n;
+}
+
+// Current sold count, cached as "<rev>:<count>" so it recomputes from the board
+// only when the board changed since it was last counted (self-heals stale/old
+// values, e.g. pixels bought before the counter existed).
+export async function getCount(s = store()) {
+  const rev = (await s.get(REV_KEY, { type: "text" })) || "0";
+  const raw = await s.get(COUNT_KEY, { type: "text" });
+  if (raw && raw.startsWith(rev + ":")) return Number(raw.slice(rev.length + 1));
+  const count = countOpaque(await loadBoard(s));
+  await s.set(COUNT_KEY, `${rev}:${count}`);
+  return count;
 }
 
 // Rebuild board.png from scratch out of the order records (the source of
@@ -60,11 +82,8 @@ export async function rebuildBoard(s = store()) {
   for (const o of await listOrders(s)) {
     if (Array.isArray(o.pixels)) paint(png, o.pixels);
   }
-  await saveBoard(png, s);
-  // Count unique sold (opaque) pixels straight off the rebuilt board.
-  let count = 0;
-  for (let i = 3; i < png.data.length; i += 4) if (png.data[i] > 0) count++;
-  await s.set(COUNT_KEY, String(count));
+  const rev = await saveBoard(png, s);
+  await s.set(COUNT_KEY, `${rev}:${countOpaque(png)}`);
   return png;
 }
 
