@@ -117,26 +117,20 @@ html, body {
   text-align: center;
 }
 .bar-hint {
-  margin: 0 0 3px;
+  margin: 0 0 6px;
   font-size: 12px;
   color: var(--muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  text-align: center;
 }
+.bar-hint a { color: var(--muted); }
 .tos-i {
-  flex: 0 0 auto;
-  width: 18px; height: 18px; line-height: 16px;
+  display: inline-block;
+  width: 17px; height: 17px; line-height: 15px;
   border: 1px solid var(--border); border-radius: 50%;
-  color: var(--muted); text-decoration: none; font-size: 12px; text-align: center;
+  color: var(--muted); text-decoration: none; font-size: 11px; text-align: center;
+  vertical-align: middle;
 }
 .tos-i:hover { color: var(--text); border-color: var(--muted); }
-.bar-stats {
-  margin: 0 0 6px;
-  font-size: 12px; color: var(--muted); text-align: center;
-}
-.bar-stats a { color: var(--text); }
 
 /* ── Standalone document pages (terms, leaderboard) ── */
 .doc {
